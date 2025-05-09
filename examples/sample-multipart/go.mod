@@ -8,5 +8,4 @@ require github.com/fermyon/spin/sdk/go/v2 v2.2.0
 require github.com/cedweber/spin-s3-api v0.0.0
 require github.com/julienschmidt/httprouter v1.3.0 // indirect
 
-
 replace github.com/cedweber/spin-s3-api => ../../.

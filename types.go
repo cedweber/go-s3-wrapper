@@ -26,18 +26,30 @@ type Client struct {
 	endpointURL string
 }
 
-type MultiPartUploadInitData struct {
-	UploadId string `xml:"UploadId"`
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html#AmazonS3-CreateMultipartUpload-response-CreateMultipartUploadOutput
+type InitiateMultipartUploadResult struct {
+	XMLName  xml.Name `xml:"InitiateMultipartUploadResult"`
+	Bucket   string   `xml:"Bucket"`
+	Key      string   `xml:"Key"`
+	UploadId string   `xml:"UploadId"`
 }
 
-type UploadedPart struct {
-	PartNumber int    `xml:"PartNumber"`
-	ETag       string `xml:"ETag"`
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompletedPart.html
+type CompletedPart struct {
+	XMLName           xml.Name `xml:"Part"`
+	ChecksumCRC32     string   `xml:"ChecksumCRC32,omitempty"`
+	ChecksumCRC32C    string   `xml:"ChecksumCRC32C,omitempty"`
+	ChecksumCRC64NVME string   `xml:"ChecksumCRC64NVME,omitempty"`
+	ChecksumSHA1      string   `xml:"ChecksumSHA1,omitempty"`
+	ChecksumSHA256    string   `xml:"ChecksumSHA256,omitempty"`
+	ETag              string   `xml:"ETag,omitempty"`
+	PartNumber        int      `xml:"PartNumber,omitempty"`
 }
 
-type CompleteMultipartUpload struct {
-	XmlName xml.Name       `xml:"CompleteMultipartUpload"`
-	Parts   []UploadedPart `xml:"Part"`
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompletedMultipartUpload.html
+type CompletedMultipartUpload struct {
+	XmlName xml.Name        `xml:"CompleteMultipartUpload"`
+	Parts   []CompletedPart `xml:"Part"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html#API_ListBuckets_ResponseSyntax
@@ -68,7 +80,7 @@ type ListObjectsResponse struct {
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CommonPrefix.html
 type CommonPrefix struct {
-	Prefix string
+	Prefix string `xml:"Prefix"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Object.html
@@ -79,12 +91,6 @@ type ObjectInfo struct {
 	LastModified time.Time
 	StorageClass string
 	Owner        Owner
-}
-
-// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
-type Owner struct {
-	DisplayName string
-	ID          string
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#RESTErrorResponses
@@ -99,59 +105,61 @@ func (e ErrorResponse) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html#AmazonS3-ListMultipartUploads-response-ListMultipartUploadsOutput
 type ListMultipartUploadsResult struct {
-	XMLName            xml.Name     `xml:"ListMultipartUploadsResult"`
-	Bucket             string       `xml:"Bucket"`
-	KeyMarker          string       `xml:"KeyMarker"`
-	UploadIdMarker     string       `xml:"UploadIdMarker"`
-	NextKeyMarker      string       `xml:"NextKeyMarker"`
-	Prefix             string       `xml:"Prefix"`
-	Delimiter          string       `xml:"Delimiter"`
-	NextUploadIdMarker string       `xml:"NextUploadIdMarker"`
-	MaxUploads         int          `xml:"MaxUploads"`
-	IsTruncated        bool         `xml:"IsTruncated"`
-	Uploads            []Upload     `xml:"Upload"`
-	CommonPrefixes     []PrefixItem `xml:"CommonPrefixes>Prefix"`
-	EncodingType       string       `xml:"EncodingType,omitempty"`
+	XMLName            xml.Name          `xml:"ListMultipartUploadsResult"`
+	Bucket             string            `xml:"Bucket"`
+	KeyMarker          string            `xml:"KeyMarker"`
+	UploadIdMarker     string            `xml:"UploadIdMarker"`
+	NextKeyMarker      string            `xml:"NextKeyMarker"`
+	Prefix             string            `xml:"Prefix"`
+	Delimiter          string            `xml:"Delimiter"`
+	NextUploadIdMarker string            `xml:"NextUploadIdMarker"`
+	MaxUploads         int               `xml:"MaxUploads"`
+	IsTruncated        bool              `xml:"IsTruncated"`
+	Uploads            []MultipartUpload `xml:"Upload"`
+	CommonPrefixes     []CommonPrefix    `xml:"CommonPrefixes>Prefix"`
+	EncodingType       string            `xml:"EncodingType,omitempty"`
 }
 
-type PrefixItem struct {
-	Prefix string `xml:"Prefix"`
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_MultipartUpload.html
+type MultipartUpload struct {
+	XMLName           xml.Name   `xml:"Upload"`
+	ChecksumAlgorithm string     `xml:"ChecksumAlgorithm,omitempty"`
+	ChecksumType      string     `xml:"ChecksumType,omitempty"`
+	Initiated         string     `xml:"Initiated"`
+	Initiator         *Initiator `xml:"Initiator"`
+	Key               string     `xml:"Key"`
+	Owner             *Initiator `xml:"Owner"`
+	StorageClass      string     `xml:"StorageClass"`
+	UploadId          string     `xml:"UploadId"`
 }
 
-type Upload struct {
-	ChecksumAlgorithm string `xml:"ChecksumAlgorithm,omitempty"`
-	ChecksumType      string `xml:"ChecksumType,omitempty"`
-	Initiated         string `xml:"Initiated"`
-	Initiator         *User  `xml:"Initiator"`
-	Key               string `xml:"Key"`
-	Owner             *User  `xml:"Owner"`
-	StorageClass      string `xml:"StorageClass"`
-	UploadId          string `xml:"UploadId"`
-}
-
-type User struct {
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Initiator.html
+type Initiator struct {
 	DisplayName string `xml:"DisplayName"`
 	ID          string `xml:"ID"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListParts.html#AmazonS3-ListParts-response-ListPartsOutput
 type ListPartsResult struct {
-	XMLName              xml.Name `xml:"ListPartsResult"`
-	Bucket               string   `xml:"Bucket"`
-	Key                  string   `xml:"Key"`
-	UploadId             string   `xml:"UploadId"`
-	PartNumberMarker     int      `xml:"PartNumberMarker"`
-	NextPartNumberMarker int      `xml:"NextPartNumberMarker"`
-	MaxParts             int      `xml:"MaxParts"`
-	IsTruncated          bool     `xml:"IsTruncated"`
-	Parts                []Part   `xml:"Part"`
-	Initiator            *User    `xml:"Initiator,omitempty"`
-	Owner                *User    `xml:"Owner,omitempty"`
-	StorageClass         string   `xml:"StorageClass,omitempty"`
-	ChecksumAlgorithm    string   `xml:"ChecksumAlgorithm,omitempty"`
-	ChecksumType         string   `xml:"ChecksumType,omitempty"`
+	XMLName              xml.Name   `xml:"ListPartsResult"`
+	Bucket               string     `xml:"Bucket"`
+	Key                  string     `xml:"Key"`
+	UploadId             string     `xml:"UploadId"`
+	PartNumberMarker     int        `xml:"PartNumberMarker"`
+	NextPartNumberMarker int        `xml:"NextPartNumberMarker"`
+	MaxParts             int        `xml:"MaxParts"`
+	IsTruncated          bool       `xml:"IsTruncated"`
+	Parts                []Part     `xml:"Part"`
+	Initiator            *Initiator `xml:"Initiator,omitempty"`
+	Owner                *Initiator `xml:"Owner,omitempty"`
+	StorageClass         string     `xml:"StorageClass,omitempty"`
+	ChecksumAlgorithm    string     `xml:"ChecksumAlgorithm,omitempty"`
+	ChecksumType         string     `xml:"ChecksumType,omitempty"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Part.html
 type Part struct {
 	ChecksumCRC32     string `xml:"ChecksumCRC32,omitempty"`
 	ChecksumCRC32C    string `xml:"ChecksumCRC32C,omitempty"`
@@ -164,15 +172,30 @@ type Part struct {
 	Size              int64  `xml:"Size"`
 }
 
-type GetObjectAttributesResponse struct {
-	XMLName      xml.Name    `xml:"GetObjectAttributesResponse"`
-	ETag         string      `xml:"ETag"`
-	Checksum     Checksum    `xml:"Checksum"`
-	ObjectParts  ObjectParts `xml:"ObjectParts"`
-	StorageClass string      `xml:"StorageClass"`
-	ObjectSize   int64       `xml:"ObjectSize"`
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ObjectPart.html
+type ObjectPart struct {
+	ChecksumCRC32     string `xml:"ChecksumCRC32,omitempty"`
+	ChecksumCRC32C    string `xml:"ChecksumCRC32C,omitempty"`
+	ChecksumCRC64NVME string `xml:"ChecksumCRC64NVME,omitempty"`
+	ChecksumSHA1      string `xml:"ChecksumSHA1,omitempty"`
+	ChecksumSHA256    string `xml:"ChecksumSHA256,omitempty"`
+	ETag              string `xml:"ETag"`
+	LastModified      string `xml:"LastModified"`
+	PartNumber        int    `xml:"PartNumber"`
+	Size              int64  `xml:"Size"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectAttributes.html#AmazonS3-GetObjectAttributes-response-GetObjectAttributesOutput
+type GetObjectAttributesResponse struct {
+	XMLName              xml.Name                 `xml:"GetObjectAttributesResponse"`
+	ETag                 string                   `xml:"ETag"`
+	Checksum             Checksum                 `xml:"Checksum"`
+	ObjectAttributeParts GetObjectAttributesParts `xml:"ObjectParts"`
+	StorageClass         string                   `xml:"StorageClass"`
+	ObjectSize           int64                    `xml:"ObjectSize"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Checksum.html
 type Checksum struct {
 	ChecksumCRC32     string `xml:"ChecksumCRC32"`
 	ChecksumCRC32C    string `xml:"ChecksumCRC32C"`
@@ -182,41 +205,48 @@ type Checksum struct {
 	ChecksumType      string `xml:"ChecksumType"`
 }
 
-type ObjectParts struct {
-	IsTruncated          bool   `xml:"IsTruncated"`
-	MaxParts             int    `xml:"MaxParts"`
-	NextPartNumberMarker int    `xml:"NextPartNumberMarker"`
-	PartNumberMarker     int    `xml:"PartNumberMarker"`
-	Parts                []Part `xml:"Part"`
-	PartsCount           int    `xml:"PartsCount"`
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectAttributesParts.html
+type GetObjectAttributesParts struct {
+	IsTruncated          bool         `xml:"IsTruncated"`
+	MaxParts             int          `xml:"MaxParts"`
+	NextPartNumberMarker int          `xml:"NextPartNumberMarker"`
+	PartNumberMarker     int          `xml:"PartNumberMarker"`
+	Parts                []ObjectPart `xml:"Part"`
+	PartsCount           int          `xml:"PartsCount"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Tagging.html
 type Tagging struct {
 	XMLName xml.Name `xml:"Tagging"`
 	TagSet  TagSet   `xml:"TagSet"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html#AmazonS3-GetObjectTagging-response-TagSet
 type TagSet struct {
 	Tags []Tag `xml:"Tag"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Tag.html
 type Tag struct {
 	Key   string `xml:"Key"`
 	Value string `xml:"Value"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListDirectoryBuckets.html#AmazonS3-ListDirectoryBuckets-response-ListDirectoryBucketsOutput
 type ListAllMyDirectoryBucketsResult struct {
-	XMLName           xml.Name              `xml:"ListAllMyDirectoryBucketsResult"`
-	Buckets           []DirectoryBucketInfo `xml:"Buckets>Bucket"`
-	ContinuationToken string                `xml:"ContinuationToken"`
+	XMLName           xml.Name `xml:"ListAllMyDirectoryBucketsResult"`
+	Buckets           []Bucket `xml:"Buckets>Bucket"`
+	ContinuationToken string   `xml:"ContinuationToken"`
 }
 
-type DirectoryBucketInfo struct {
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Bucket.html
+type Bucket struct {
 	BucketRegion string    `xml:"BucketRegion"`
 	CreationDate time.Time `xml:"CreationDate"`
 	Name         string    `xml:"Name"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_WebsiteConfiguration.html
 type WebsiteConfiguration struct {
 	XMLName               xml.Name               `xml:"WebsiteConfiguration"`
 	RedirectAllRequestsTo *RedirectAllRequestsTo `xml:"RedirectAllRequestsTo,omitempty"`
@@ -225,32 +255,139 @@ type WebsiteConfiguration struct {
 	RoutingRules          []RoutingRule          `xml:"RoutingRules>RoutingRule,omitempty"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_RedirectAllRequestsTo.html
 type RedirectAllRequestsTo struct {
 	HostName string `xml:"HostName"`
 	Protocol string `xml:"Protocol,omitempty"` // optional
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_IndexDocument.html
 type IndexDocument struct {
 	Suffix string `xml:"Suffix"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ErrorDocument.html
 type ErrorDocument struct {
 	Key string `xml:"Key"`
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_RoutingRule.html
 type RoutingRule struct {
 	Condition *Condition `xml:"Condition,omitempty"`
 	Redirect  Redirect   `xml:"Redirect"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Condition.html
 type Condition struct {
 	HttpErrorCodeReturnedEquals string `xml:"HttpErrorCodeReturnedEquals,omitempty"`
 	KeyPrefixEquals             string `xml:"KeyPrefixEquals,omitempty"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Redirect.html
 type Redirect struct {
 	HostName             string `xml:"HostName,omitempty"`
 	HttpRedirectCode     string `xml:"HttpRedirectCode,omitempty"`
 	Protocol             string `xml:"Protocol,omitempty"`
 	ReplaceKeyPrefixWith string `xml:"ReplaceKeyPrefixWith,omitempty"`
 	ReplaceKeyWith       string `xml:"ReplaceKeyWith,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Delete.html
+type Delete struct {
+	XMLName xml.Name           `xml:"Delete"`
+	Objects []ObjectIdentifier `xml:"Object"`
+	Quiet   bool               `xml:"Quiet"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ObjectIdentifier.html
+type ObjectIdentifier struct {
+	ETag             string    `xml:"ETag"`
+	Key              string    `xml:"Key"`
+	LastModifiedTime time.Time `xml:"LastModifiedTime"`
+	Size             int64     `xml:"Size"`
+	VersionId        string    `xml:"VersionId"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html#AmazonS3-DeleteObjects-response-DeleteObjectsOutput
+type DeleteResult struct {
+	XMLName xml.Name        `xml:"DeleteResult"`
+	Deleted []DeletedObject `xml:"Deleted"`
+	Errors  []Error         `xml:"Error"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeletedObject.html
+type DeletedObject struct {
+	DeleteMarker          bool   `xml:"DeleteMarker"`
+	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId"`
+	Key                   string `xml:"Key"`
+	VersionId             string `xml:"VersionId"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Error.html
+type Error struct {
+	Code      string `xml:"Code"`
+	Key       string `xml:"Key"`
+	Message   string `xml:"Message"`
+	VersionId string `xml:"VersionId"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html#AmazonS3-ListObjectVersions-response-ListObjectVersionsOutput
+type ListVersionsResult struct {
+	XMLName             xml.Name            `xml:"ListVersionsResult"`
+	IsTruncated         bool                `xml:"IsTruncated"`
+	KeyMarker           string              `xml:"KeyMarker"`
+	VersionIdMarker     string              `xml:"VersionIdMarker"`
+	NextKeyMarker       string              `xml:"NextKeyMarker"`
+	NextVersionIdMarker string              `xml:"NextVersionIdMarker"`
+	Versions            []ObjectVersion     `xml:"Version"`
+	DeleteMarkers       []DeleteMarkerEntry `xml:"DeleteMarker"`
+	Name                string              `xml:"Name"`
+	Prefix              string              `xml:"Prefix"`
+	Delimiter           string              `xml:"Delimiter"`
+	MaxKeys             int                 `xml:"MaxKeys"`
+	CommonPrefixes      []CommonPrefix      `xml:"CommonPrefixes"`
+	EncodingType        string              `xml:"EncodingType"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ObjectVersion.html
+type ObjectVersion struct {
+	ChecksumAlgorithm []string       `xml:"ChecksumAlgorithm"`
+	ChecksumType      string         `xml:"ChecksumType"`
+	ETag              string         `xml:"ETag"`
+	IsLatest          bool           `xml:"IsLatest"`
+	Key               string         `xml:"Key"`
+	LastModified      time.Time      `xml:"LastModified"`
+	Owner             *Owner         `xml:"Owner"`
+	RestoreStatus     *RestoreStatus `xml:"RestoreStatus"`
+	Size              int64          `xml:"Size"`
+	StorageClass      string         `xml:"StorageClass"`
+	VersionId         string         `xml:"VersionId"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteMarkerEntry.html
+type DeleteMarkerEntry struct {
+	IsLatest     bool      `xml:"IsLatest"`
+	Key          string    `xml:"Key"`
+	LastModified time.Time `xml:"LastModified"`
+	Owner        *Owner    `xml:"Owner"`
+	VersionId    string    `xml:"VersionId"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
+type Owner struct {
+	DisplayName string `xml:"DisplayName"`
+	ID          string `xml:"ID"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreStatus.html
+type RestoreStatus struct {
+	IsRestoreInProgress bool      `xml:"IsRestoreInProgress"`
+	RestoreExpiryDate   time.Time `xml:"RestoreExpiryDate"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html#AmazonS3-GetBucketVersioning-response-GetBucketVersioningOutput
+type VersioningConfiguration struct {
+	XMLName   xml.Name `xml:"VersioningConfiguration"`
+	Status    string   `xml:"Status"`
+	MfaDelete string   `xml:"MfaDelete"`
 }

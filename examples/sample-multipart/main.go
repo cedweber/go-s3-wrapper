@@ -7,35 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-
 	"strconv"
 
 	s3 "github.com/cedweber/spin-s3-api"
 	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
 )
-
-type CopyConfig struct {
-	SourceBucketName string
-	SourceBaseDomain string
-	SourceRegion     string
-	SourceAccessKey  string
-	SourceSecretKey  string
-	TargetBucketName string
-	TargetBaseDomain string
-	TargetRegion     string
-	TargetAccessKey  string
-	TargetSecretKey  string
-	FilePath         string
-}
-
-type FileBucketConfig struct {
-	BucketName string
-	BaseDomain string
-	Region     string
-	AccessKey  string
-	SecretKey  string
-	FilePath   string
-}
 
 func init() {
 	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
@@ -124,9 +100,6 @@ func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 
 	fmt.Printf("File Downstream completed")
 
-	//partSize := 4096000
-	//buf := make([]byte, partSize)
-
 	defer file.Close()
 
 	resp, err = s3ClientT.PutObjectStream(ctx, config.TargetBucketName, config.FilePath, file)
@@ -135,32 +108,6 @@ func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 		http.Error(w, "Error reading file", http.StatusInternalServerError)
 	}
 	resp.Body.Close()
-
-	/**	for {
-			n, err := file.Read(buf)
-			if err != nil && err != io.EOF {
-				fmt.Printf("Error reading file: %v\n", err)
-				http.Error(w, "Error reading file", http.StatusInternalServerError)
-				return
-			}
-
-			if err == io.EOF {
-				break
-			}
-
-			if n > 0 {
-
-				resp, err := s3ClientT.PutObjectStream(ctx, config.TargetBucketName, config.FilePath, file)
-				if err != nil && err != io.EOF {
-					fmt.Printf("Error reading file: %v\n", err)
-					http.Error(w, "Error reading file", http.StatusInternalServerError)
-				}
-				resp.Body.Close()
-
-			}
-		}
-	**/
-	file.Close()
 
 	fmt.Printf("File Upload finished")
 	w.WriteHeader(200)
@@ -237,7 +184,7 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 	current := 1
 	partCount := i/partSize + 1
 
-	partsInfo := []s3.UploadedPart{}
+	partsInfo := []s3.CompletedPart{}
 
 	buf := make([]byte, partSize)
 
@@ -274,7 +221,7 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 
 				part.Close()
 
-				partData := s3.UploadedPart{PartNumber: int(current), ETag: tag}
+				partData := s3.CompletedPart{PartNumber: int(current), ETag: tag}
 				partsInfo = append(partsInfo, partData)
 
 			} else {
@@ -295,7 +242,7 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 
 				part.Close()
 
-				partData := s3.UploadedPart{PartNumber: current, ETag: tag}
+				partData := s3.CompletedPart{PartNumber: current, ETag: tag}
 				partsInfo = append(partsInfo, partData)
 
 			}

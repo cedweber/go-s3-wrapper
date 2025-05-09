@@ -59,8 +59,6 @@ func (c *Client) buildEndpointWithQuery(bucketName, path string, query map[strin
 
 		if len(query) > 0 {
 
-			//	return "https://lds-test-bucket-b.object.storage.eu01.onstackit.cloud/?uploads=", nil
-
 			queryPart := []string{}
 			for k, v := range query {
 
@@ -222,16 +220,6 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-// do sends the request and handles any error response.
-func (c *Client) doNoXml(req *http.Request) (*http.Response, error) {
-	resp, err := spinhttp.Send(req)
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-
-	return resp, nil
-}
-
 // Create a bucket
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
 func (c *Client) CreateBucket(ctx context.Context, name string) error {
@@ -248,6 +236,7 @@ func (c *Client) CreateBucket(ctx context.Context, name string) error {
 // ListBuckets returns a list of buckets.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
 func (c *Client) ListBuckets(ctx context.Context) (*ListBucketsResponse, error) {
+	var results ListBucketsResponse
 	req, err := c.newRequest(ctx, http.MethodGet, "", "", nil)
 	if err != nil {
 		return nil, err
@@ -259,10 +248,11 @@ func (c *Client) ListBuckets(ctx context.Context) (*ListBucketsResponse, error) 
 	}
 	defer resp.Body.Close()
 
-	var results ListBucketsResponse
 	if err := xml.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
+
+	resp.Body.Close()
 
 	return &results, nil
 }
@@ -270,7 +260,32 @@ func (c *Client) ListBuckets(ctx context.Context) (*ListBucketsResponse, error) 
 // ListObjects returns a list of objects within a specified bucket.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
 func (c *Client) ListObjects(ctx context.Context, bucketName string) (*ListObjectsResponse, error) {
+	var results ListObjectsResponse
 	req, err := c.newRequest(ctx, http.MethodGet, bucketName, "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := xml.NewDecoder(resp.Body).Decode(&results); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	resp.Body.Close()
+
+	return &results, nil
+}
+
+// ListObjectsV2 returns a list of objects within a specified bucket.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html
+func (c *Client) ListObjectsV2(ctx context.Context, bucketName string, query map[string]string) (*ListObjectsResponse, error) {
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -285,6 +300,42 @@ func (c *Client) ListObjects(ctx context.Context, bucketName string) (*ListObjec
 	if err := xml.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
+
+	resp.Body.Close()
+
+	return &results, nil
+}
+
+// ListObjectVersions returns a list of objects with metadata in a bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+func (c *Client) ListObjectVersions(ctx context.Context, bucketName string, query map[string]string) (*ListVersionsResult, error) {
+	var results ListVersionsResult
+	queryData := make(map[string]string)
+
+	queryData["versions"] = ""
+
+	if query != nil {
+		for k, v := range query {
+			queryData[k] = v
+		}
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := xml.NewDecoder(resp.Body).Decode(&results); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	resp.Body.Close()
 
 	return &results, nil
 }
@@ -301,6 +352,7 @@ func (c *Client) HeadObject(ctx context.Context, bucketName string, objectName s
 	if err != nil {
 		return nil, err
 	}
+	resp.Body.Close()
 
 	return resp, nil
 }
@@ -352,9 +404,61 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, d
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	return nil
+}
+
+//	Delete a single specified object.
+//
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html
+func (c *Client) DeleteObject(ctx context.Context, bucketName, objectName string, versionId string) error {
+
+	query := make(map[string]string)
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, objectName, query, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete multiple objects in a single request
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
+func (c *Client) DeleteObjects(ctx context.Context, bucketName string, objects Delete) (*DeleteResult, error) {
+	var deletionResponse DeleteResult
+
+	query := make(map[string]string, 1)
+	query["delete"] = ""
+
+	data, err := xml.Marshal(objects)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, data)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deletionResponse, nil
 }
 
 // PutObject uploads an object to the specified bucket.
@@ -369,7 +473,6 @@ func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName str
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
 	return resp, nil
@@ -377,9 +480,9 @@ func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName str
 
 // Initiate Multipart Upload and receive the uploadId
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
-func (c *Client) CreateMultipartUpload(ctx context.Context, bucketName string, filePath string) (*MultiPartUploadInitData, error) {
+func (c *Client) CreateMultipartUpload(ctx context.Context, bucketName string, filePath string) (*InitiateMultipartUploadResult, error) {
 
-	var uploadData MultiPartUploadInitData
+	var uploadData InitiateMultipartUploadResult
 
 	query := make(map[string]string, 1)
 	query["uploads"] = ""
@@ -427,12 +530,12 @@ func (c *Client) UploadPart(ctx context.Context, bucketName string, objectName s
 
 // Complete the upload
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
-func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string, objectName string, uploadId string, parts []UploadedPart) error {
+func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string, objectName string, uploadId string, parts []CompletedPart) error {
 
 	query := make(map[string]string)
 	query["uploadId"] = string(uploadId)
 
-	completeUpload := CompleteMultipartUpload{
+	completeUpload := CompletedMultipartUpload{
 		Parts: parts,
 	}
 	xmlData, err := xml.Marshal(completeUpload)
@@ -483,6 +586,8 @@ func (c *Client) ListMultipartUploads(ctx context.Context, bucketName string, qu
 	if err != nil {
 		return nil, err
 	}
+
+	resp.Body.Close()
 
 	return &listPartsResult, nil
 }
@@ -537,6 +642,8 @@ func (c *Client) ListParts(ctx context.Context, bucketName string, filePath stri
 		return nil, err
 	}
 
+	resp.Body.Close()
+
 	return &listPartsResult, nil
 }
 
@@ -566,6 +673,8 @@ func (c *Client) PutObjectTagging(ctx context.Context, bucketName string, filePa
 	if err != nil {
 		return "", err
 	}
+
+	resp.Body.Close()
 
 	return resp.Header.Get("x-amz-version-id"), nil
 }
@@ -610,12 +719,15 @@ func (c *Client) GetObjectAttributes(ctx context.Context, bucketName string, fil
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	err = xml.NewDecoder(resp.Body).Decode(&attributes)
 	if err != nil {
 		fmt.Println("Error parsing XML:", err)
 		return nil, err
 	}
+
+	resp.Body.Close()
 
 	return &attributes, nil
 }
@@ -635,12 +747,15 @@ func (c *Client) ListDirectoryBuckets(ctx context.Context, query map[string]stri
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	err = xml.NewDecoder(resp.Body).Decode(&list)
 	if err != nil {
 		fmt.Println("Error parsing XML:", err)
 		return nil, err
 	}
+
+	resp.Body.Close()
 
 	return &list, err
 }
@@ -663,11 +778,14 @@ func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*Webs
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	err = xml.NewDecoder(resp.Body).Decode(&config)
 	if err != nil {
 		return nil, err
 	}
+
+	resp.Body.Close()
 
 	return &config, nil
 }
@@ -717,4 +835,57 @@ func (c *Client) DeleteBucketWebsite(ctx context.Context, bucketName string) err
 
 	return nil
 
+}
+
+// Bucket Versioning
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html
+func (c *Client) GetBucketVersioning(ctx context.Context, bucketName string) (*VersioningConfiguration, error) {
+	var config VersioningConfiguration
+	var query map[string]string
+	query["versioning"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// Put Bucket Versioning
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketVersioning.html
+func (c *Client) PutBucketVersioning(ctx context.Context, bucketName string, version VersioningConfiguration) error {
+	var query map[string]string
+	query["versioning"] = ""
+
+	data, err := xml.Marshal(version)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
