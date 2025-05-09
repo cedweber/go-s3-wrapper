@@ -37,13 +37,13 @@ type InitiateMultipartUploadResult struct {
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompletedPart.html
 type CompletedPart struct {
 	XMLName           xml.Name `xml:"Part"`
-	ChecksumCRC32     string   `xml:"ChecksumCRC32,omitempty"`
-	ChecksumCRC32C    string   `xml:"ChecksumCRC32C,omitempty"`
-	ChecksumCRC64NVME string   `xml:"ChecksumCRC64NVME,omitempty"`
-	ChecksumSHA1      string   `xml:"ChecksumSHA1,omitempty"`
-	ChecksumSHA256    string   `xml:"ChecksumSHA256,omitempty"`
-	ETag              string   `xml:"ETag,omitempty"`
-	PartNumber        int      `xml:"PartNumber,omitempty"`
+	ChecksumCRC32     string   `xml:"ChecksumCRC32"`
+	ChecksumCRC32C    string   `xml:"ChecksumCRC32C"`
+	ChecksumCRC64NVME string   `xml:"ChecksumCRC64NVME"`
+	ChecksumSHA1      string   `xml:"ChecksumSHA1"`
+	ChecksumSHA256    string   `xml:"ChecksumSHA256"`
+	ETag              string   `xml:"ETag"`
+	PartNumber        int      `xml:"PartNumber"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompletedMultipartUpload.html
@@ -119,14 +119,14 @@ type ListMultipartUploadsResult struct {
 	IsTruncated        bool              `xml:"IsTruncated"`
 	Uploads            []MultipartUpload `xml:"Upload"`
 	CommonPrefixes     []CommonPrefix    `xml:"CommonPrefixes>Prefix"`
-	EncodingType       string            `xml:"EncodingType,omitempty"`
+	EncodingType       string            `xml:"EncodingType"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_MultipartUpload.html
 type MultipartUpload struct {
 	XMLName           xml.Name   `xml:"Upload"`
-	ChecksumAlgorithm string     `xml:"ChecksumAlgorithm,omitempty"`
-	ChecksumType      string     `xml:"ChecksumType,omitempty"`
+	ChecksumAlgorithm string     `xml:"ChecksumAlgorithm"`
+	ChecksumType      string     `xml:"ChecksumType"`
 	Initiated         string     `xml:"Initiated"`
 	Initiator         *Initiator `xml:"Initiator"`
 	Key               string     `xml:"Key"`
@@ -152,20 +152,20 @@ type ListPartsResult struct {
 	MaxParts             int        `xml:"MaxParts"`
 	IsTruncated          bool       `xml:"IsTruncated"`
 	Parts                []Part     `xml:"Part"`
-	Initiator            *Initiator `xml:"Initiator,omitempty"`
-	Owner                *Initiator `xml:"Owner,omitempty"`
-	StorageClass         string     `xml:"StorageClass,omitempty"`
-	ChecksumAlgorithm    string     `xml:"ChecksumAlgorithm,omitempty"`
-	ChecksumType         string     `xml:"ChecksumType,omitempty"`
+	Initiator            *Initiator `xml:"Initiator"`
+	Owner                *Initiator `xml:"Owner"`
+	StorageClass         string     `xml:"StorageClass"`
+	ChecksumAlgorithm    string     `xml:"ChecksumAlgorithm"`
+	ChecksumType         string     `xml:"ChecksumType"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Part.html
 type Part struct {
-	ChecksumCRC32     string `xml:"ChecksumCRC32,omitempty"`
-	ChecksumCRC32C    string `xml:"ChecksumCRC32C,omitempty"`
-	ChecksumCRC64NVME string `xml:"ChecksumCRC64NVME,omitempty"`
-	ChecksumSHA1      string `xml:"ChecksumSHA1,omitempty"`
-	ChecksumSHA256    string `xml:"ChecksumSHA256,omitempty"`
+	ChecksumCRC32     string `xml:"ChecksumCRC32"`
+	ChecksumCRC32C    string `xml:"ChecksumCRC32C"`
+	ChecksumCRC64NVME string `xml:"ChecksumCRC64NVME"`
+	ChecksumSHA1      string `xml:"ChecksumSHA1"`
+	ChecksumSHA256    string `xml:"ChecksumSHA256"`
 	ETag              string `xml:"ETag"`
 	LastModified      string `xml:"LastModified"`
 	PartNumber        int    `xml:"PartNumber"`
@@ -174,11 +174,11 @@ type Part struct {
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ObjectPart.html
 type ObjectPart struct {
-	ChecksumCRC32     string `xml:"ChecksumCRC32,omitempty"`
-	ChecksumCRC32C    string `xml:"ChecksumCRC32C,omitempty"`
-	ChecksumCRC64NVME string `xml:"ChecksumCRC64NVME,omitempty"`
-	ChecksumSHA1      string `xml:"ChecksumSHA1,omitempty"`
-	ChecksumSHA256    string `xml:"ChecksumSHA256,omitempty"`
+	ChecksumCRC32     string `xml:"ChecksumCRC32"`
+	ChecksumCRC32C    string `xml:"ChecksumCRC32C"`
+	ChecksumCRC64NVME string `xml:"ChecksumCRC64NVME"`
+	ChecksumSHA1      string `xml:"ChecksumSHA1"`
+	ChecksumSHA256    string `xml:"ChecksumSHA256"`
 	ETag              string `xml:"ETag"`
 	LastModified      string `xml:"LastModified"`
 	PartNumber        int    `xml:"PartNumber"`
@@ -249,16 +249,16 @@ type Bucket struct {
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_WebsiteConfiguration.html
 type WebsiteConfiguration struct {
 	XMLName               xml.Name               `xml:"WebsiteConfiguration"`
-	RedirectAllRequestsTo *RedirectAllRequestsTo `xml:"RedirectAllRequestsTo,omitempty"`
-	IndexDocument         *IndexDocument         `xml:"IndexDocument,omitempty"`
-	ErrorDocument         *ErrorDocument         `xml:"ErrorDocument,omitempty"`
-	RoutingRules          []RoutingRule          `xml:"RoutingRules>RoutingRule,omitempty"`
+	RedirectAllRequestsTo *RedirectAllRequestsTo `xml:"RedirectAllRequestsTo"`
+	IndexDocument         *IndexDocument         `xml:"IndexDocument"`
+	ErrorDocument         *ErrorDocument         `xml:"ErrorDocument"`
+	RoutingRules          []RoutingRule          `xml:"RoutingRules>RoutingRule"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_RedirectAllRequestsTo.html
 type RedirectAllRequestsTo struct {
 	HostName string `xml:"HostName"`
-	Protocol string `xml:"Protocol,omitempty"` // optional
+	Protocol string `xml:"Protocol"` // optional
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_IndexDocument.html
@@ -273,23 +273,23 @@ type ErrorDocument struct {
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_RoutingRule.html
 type RoutingRule struct {
-	Condition *Condition `xml:"Condition,omitempty"`
+	Condition *Condition `xml:"Condition"`
 	Redirect  Redirect   `xml:"Redirect"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Condition.html
 type Condition struct {
-	HttpErrorCodeReturnedEquals string `xml:"HttpErrorCodeReturnedEquals,omitempty"`
-	KeyPrefixEquals             string `xml:"KeyPrefixEquals,omitempty"`
+	HttpErrorCodeReturnedEquals string `xml:"HttpErrorCodeReturnedEquals"`
+	KeyPrefixEquals             string `xml:"KeyPrefixEquals"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Redirect.html
 type Redirect struct {
-	HostName             string `xml:"HostName,omitempty"`
-	HttpRedirectCode     string `xml:"HttpRedirectCode,omitempty"`
-	Protocol             string `xml:"Protocol,omitempty"`
-	ReplaceKeyPrefixWith string `xml:"ReplaceKeyPrefixWith,omitempty"`
-	ReplaceKeyWith       string `xml:"ReplaceKeyWith,omitempty"`
+	HostName             string `xml:"HostName"`
+	HttpRedirectCode     string `xml:"HttpRedirectCode"`
+	Protocol             string `xml:"Protocol"`
+	ReplaceKeyPrefixWith string `xml:"ReplaceKeyPrefixWith"`
+	ReplaceKeyWith       string `xml:"ReplaceKeyWith"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Delete.html

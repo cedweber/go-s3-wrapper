@@ -310,15 +310,12 @@ func (c *Client) ListObjectsV2(ctx context.Context, bucketName string, query map
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
 func (c *Client) ListObjectVersions(ctx context.Context, bucketName string, query map[string]string) (*ListVersionsResult, error) {
 	var results ListVersionsResult
-	queryData := make(map[string]string)
 
-	queryData["versions"] = ""
-
-	if query != nil {
-		for k, v := range query {
-			queryData[k] = v
-		}
+	if query == nil {
+		query = make(map[string]string)
 	}
+
+	query["versions"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
@@ -437,7 +434,7 @@ func (c *Client) DeleteObject(ctx context.Context, bucketName, objectName string
 func (c *Client) DeleteObjects(ctx context.Context, bucketName string, objects Delete) (*DeleteResult, error) {
 	var deletionResponse DeleteResult
 
-	query := make(map[string]string, 1)
+	query := make(map[string]string)
 	query["delete"] = ""
 
 	data, err := xml.Marshal(objects)
@@ -484,7 +481,7 @@ func (c *Client) CreateMultipartUpload(ctx context.Context, bucketName string, f
 
 	var uploadData InitiateMultipartUploadResult
 
-	query := make(map[string]string, 1)
+	query := make(map[string]string)
 	query["uploads"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodPost, bucketName, filePath, query, nil)
@@ -563,6 +560,10 @@ func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string,
 func (c *Client) ListMultipartUploads(ctx context.Context, bucketName string, query map[string]string) (*ListMultipartUploadsResult, error) {
 	var listPartsResult ListMultipartUploadsResult
 
+	if query == nil {
+		query = make(map[string]string)
+	}
+
 	query["uploads"] = ""
 
 	// Complete Writing
@@ -617,16 +618,14 @@ func (c *Client) AbortMultipartUpload(ctx context.Context, bucketName string, fi
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListParts.html
 func (c *Client) ListParts(ctx context.Context, bucketName string, filePath string, uploadId string, query map[string]string) (*ListPartsResult, error) {
 
-	queryData := make(map[string]string)
-
-	for k, v := range queryData {
-		queryData[k] = v
+	if query == nil {
+		query = make(map[string]string)
 	}
 
-	queryData["uploadId"] = uploadId
+	query["uploadId"] = uploadId
 
 	var listPartsResult ListPartsResult
-	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, queryData, nil)
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -652,7 +651,7 @@ func (c *Client) ListParts(ctx context.Context, bucketName string, filePath stri
 // Put/Update object tagging
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectTagging.html
 func (c *Client) PutObjectTagging(ctx context.Context, bucketName string, filePath string, tagging Tagging, versionId string) (string, error) {
-	var query map[string]string
+	query := make(map[string]string)
 	query["tagging"] = ""
 
 	if versionId != "" {
@@ -683,13 +682,17 @@ func (c *Client) PutObjectTagging(ctx context.Context, bucketName string, filePa
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjectTagging.html
 func (c *Client) DeleteObjectTagging(ctx context.Context, bucketName string, filePath string, query map[string]string, versionId string) error {
 
+	if query == nil {
+		query = make(map[string]string)
+	}
+
 	query["tagging"] = ""
 
 	if versionId != "" {
 		query["versionId"] = versionId
 	}
 
-	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, filePath, query, []byte{})
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, filePath, query, nil)
 	if err != nil {
 		return err
 	}
@@ -707,10 +710,14 @@ func (c *Client) DeleteObjectTagging(ctx context.Context, bucketName string, fil
 func (c *Client) GetObjectAttributes(ctx context.Context, bucketName string, filePath string, query map[string]string) (*GetObjectAttributesResponse, error) {
 	var attributes GetObjectAttributesResponse
 
+	if query == nil {
+		query = make(map[string]string)
+	}
+
 	query["attributes"] = ""
 
 	// Complete Writing
-	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, []byte{})
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -738,7 +745,7 @@ func (c *Client) ListDirectoryBuckets(ctx context.Context, query map[string]stri
 	var list ListAllMyDirectoryBucketsResult
 
 	// Complete Writing
-	req, err := c.newRequestWithQuery(ctx, http.MethodGet, "", "", query, []byte{})
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, "", "", query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -765,7 +772,7 @@ func (c *Client) ListDirectoryBuckets(ctx context.Context, query map[string]stri
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketWebsite.html
 func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*WebsiteConfiguration, error) {
 	var config WebsiteConfiguration
-	var query map[string]string
+	query := make(map[string]string)
 	query["website"] = ""
 
 	// Complete Writing
@@ -793,7 +800,7 @@ func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*Webs
 // Put bucket website configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketWebsite.html
 func (c *Client) PutBucketWebsite(ctx context.Context, bucketName string, config WebsiteConfiguration) error {
-	var query map[string]string
+	query := make(map[string]string)
 	query["website"] = ""
 
 	data, err := xml.Marshal(config)
@@ -820,7 +827,7 @@ func (c *Client) PutBucketWebsite(ctx context.Context, bucketName string, config
 // Delete bucket website
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketWebsite.html
 func (c *Client) DeleteBucketWebsite(ctx context.Context, bucketName string) error {
-	var query map[string]string
+	query := make(map[string]string)
 	query["website"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
@@ -842,7 +849,7 @@ func (c *Client) DeleteBucketWebsite(ctx context.Context, bucketName string) err
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html
 func (c *Client) GetBucketVersioning(ctx context.Context, bucketName string) (*VersioningConfiguration, error) {
 	var config VersioningConfiguration
-	var query map[string]string
+	query := make(map[string]string)
 	query["versioning"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
@@ -866,7 +873,7 @@ func (c *Client) GetBucketVersioning(ctx context.Context, bucketName string) (*V
 // Put Bucket Versioning
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketVersioning.html
 func (c *Client) PutBucketVersioning(ctx context.Context, bucketName string, version VersioningConfiguration) error {
-	var query map[string]string
+	query := make(map[string]string)
 	query["versioning"] = ""
 
 	data, err := xml.Marshal(version)
@@ -888,4 +895,80 @@ func (c *Client) PutBucketVersioning(ctx context.Context, bucketName string, ver
 	}
 
 	return nil
+}
+
+// Bucket Tagging
+
+// get bucket tagigng
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketTagging.html
+func (c *Client) GetBucketTagging(ctx context.Context, bucketName string) (*Tagging, error) {
+	var tagging Tagging
+	query := make(map[string]string)
+	query["tagging"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&tagging)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tagging, nil
+}
+
+// Put bucket tagging
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketTagging.html
+func (c *Client) PutBucketTagging(ctx context.Context, bucketName string, tagging Tagging) (string, error) {
+	query := make(map[string]string)
+	query["tagging"] = ""
+
+	data, err := xml.Marshal(tagging)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return "", err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	resp, err := c.do(req)
+	if err != nil {
+		return "", err
+	}
+	resp.Body.Close()
+
+	return resp.Header.Get("x-amz-version-id"), nil
+}
+
+// Delete bucket tagging
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketTagging.html
+func (c *Client) DeleteBucketTagging(ctx context.Context, bucketName string) error {
+	query := make(map[string]string)
+	query["tagging"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
