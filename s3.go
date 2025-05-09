@@ -232,6 +232,8 @@ func (c *Client) doNoXml(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
+// Create a bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
 func (c *Client) CreateBucket(ctx context.Context, name string) error {
 	req, err := c.newRequest(ctx, http.MethodPut, "", name, nil)
 	if err != nil {
@@ -244,6 +246,7 @@ func (c *Client) CreateBucket(ctx context.Context, name string) error {
 }
 
 // ListBuckets returns a list of buckets.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html
 func (c *Client) ListBuckets(ctx context.Context) (*ListBucketsResponse, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, "", "", nil)
 	if err != nil {
@@ -265,6 +268,7 @@ func (c *Client) ListBuckets(ctx context.Context) (*ListBucketsResponse, error) 
 }
 
 // ListObjects returns a list of objects within a specified bucket.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
 func (c *Client) ListObjects(ctx context.Context, bucketName string) (*ListObjectsResponse, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, bucketName, "", nil)
 	if err != nil {
@@ -286,6 +290,7 @@ func (c *Client) ListObjects(ctx context.Context, bucketName string) (*ListObjec
 }
 
 // HeadObject get object metadata, in this case the file size
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html
 func (c *Client) HeadObject(ctx context.Context, bucketName string, objectName string) (*http.Response, error) {
 	req, err := c.newRequest(ctx, http.MethodHead, bucketName, objectName, nil)
 	if err != nil {
@@ -301,7 +306,7 @@ func (c *Client) HeadObject(ctx context.Context, bucketName string, objectName s
 }
 
 // GetObject fetches an object.
-// TODO: Create a struct to contain meta? etag,last modified, etc
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
 func (c *Client) GetObject(ctx context.Context, bucketName, objectName string) (io.ReadCloser, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, bucketName, objectName, nil)
 	if err != nil {
@@ -318,6 +323,7 @@ func (c *Client) GetObject(ctx context.Context, bucketName, objectName string) (
 }
 
 // GetObject fetches an object.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
 func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName string, start int, end int) (io.ReadCloser, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, bucketName, objectName, nil)
 	if err != nil {
@@ -335,6 +341,7 @@ func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName strin
 }
 
 // PutObject uploads an object to the specified bucket.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, data []byte) error {
 	req, err := c.newRequest(ctx, http.MethodPut, bucketName, objectName, data)
 	if err != nil {
@@ -351,6 +358,7 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, d
 }
 
 // PutObject uploads an object to the specified bucket.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader) (*http.Response, error) {
 	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, data)
 	if err != nil {
@@ -638,7 +646,7 @@ func (c *Client) ListDirectoryBuckets(ctx context.Context, query map[string]stri
 }
 
 // Website
-
+// Retrieve bucket website configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketWebsite.html
 func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*WebsiteConfiguration, error) {
 	var config WebsiteConfiguration
@@ -664,6 +672,7 @@ func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*Webs
 	return &config, nil
 }
 
+// Put bucket website configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketWebsite.html
 func (c *Client) PutBucketWebsite(ctx context.Context, bucketName string, config WebsiteConfiguration) error {
 	var query map[string]string
@@ -690,6 +699,7 @@ func (c *Client) PutBucketWebsite(ctx context.Context, bucketName string, config
 	return nil
 }
 
+// Delete bucket website
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketWebsite.html
 func (c *Client) DeleteBucketWebsite(ctx context.Context, bucketName string) error {
 	var query map[string]string
