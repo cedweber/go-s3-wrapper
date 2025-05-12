@@ -478,3 +478,57 @@ type Grantee struct {
 	URI          string   `xml:"URI,omitempty"`
 	EmailAddress string   `xml:"EmailAddress,omitempty"`
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_NotificationConfiguration.html
+type NotificationConfiguration struct {
+	XMLName                      xml.Name                      `xml:"NotificationConfiguration"`
+	XMLNS                        string                        `xml:"xmlns,attr,omitempty"`
+	TopicConfigurations          []TopicConfiguration          `xml:"TopicConfiguration,omitempty"`
+	QueueConfigurations          []QueueConfiguration          `xml:"QueueConfiguration,omitempty"`
+	CloudFunctionConfigurations  []LambdaFunctionConfiguration `xml:"CloudFunctionConfiguration,omitempty"`
+	EventBridgeConfiguration     *EventBridgeConfiguration     `xml:"EventBridgeConfiguration,omitempty"`
+	LambdaFunctionConfigurations []LambdaFunctionConfiguration `xml:"LambdaFunctionConfiguration,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_TopicConfiguration.html
+type TopicConfiguration struct {
+	ID       string                           `xml:"Id"`
+	TopicArn string                           `xml:"Topic"`
+	Events   []string                         `xml:"Event"`
+	Filter   *NotificationConfigurationFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_QueueConfiguration.html
+type QueueConfiguration struct {
+	ID       string                           `xml:"Id"`
+	QueueArn string                           `xml:"Queue"`
+	Events   []string                         `xml:"Event"`
+	Filter   *NotificationConfigurationFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_EventBridgeConfiguration.html
+type EventBridgeConfiguration struct{}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_NotificationConfigurationFilter.html
+type NotificationConfigurationFilter struct {
+	Key *S3KeyFilter `xml:"Key"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_S3KeyFilter.html
+type S3KeyFilter struct {
+	FilterRules []FilterRule `xml:"FilterRule"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_FilterRule.html
+type FilterRule struct {
+	Name  string `xml:"Name"`
+	Value string `xml:"Value"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_LambdaFunctionConfiguration.html
+type LambdaFunctionConfiguration struct {
+	ID                string                           `xml:"Id"`
+	LambdaFunctionArn string                           `xml:"LambdaFunctionArn"`
+	Events            []string                         `xml:"Event"`
+	Filter            *NotificationConfigurationFilter `xml:"Filter"`
+}
