@@ -1304,3 +1304,73 @@ func (c *Client) DeletePublicAccessBlock(ctx context.Context, bucketName string)
 
 	return nil
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycleConfiguration.html
+func (c *Client) GetBucketLifecycleConfiguration(ctx context.Context, bucketName string) (*LifecycleConfiguration, error) {
+	var config LifecycleConfiguration
+	var query map[string]string
+	query["lifecycle"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html
+func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName string, lifecycle LifecycleConfiguration) (string, error) {
+	var query map[string]string
+	query["lifecycle"] = ""
+
+	data, err := xml.Marshal(lifecycle)
+	if err != nil {
+		return "", err
+	}
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return "", err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	resp, err := c.do(req)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Header.Get("x-amz-transition-default-minimum-object-size"), nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_DeleteBucketLifecycleConfiguration.html
+func (c *Client) DeleteBucketLifecycle(ctx context.Context, bucketName string) error {
+	var query map[string]string
+	query["lifecycle"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, fmt.Sprintf("/v20180820/bucket/%s/lifecycleconfiguration", bucketName), query, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

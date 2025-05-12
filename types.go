@@ -432,15 +432,15 @@ type PublicAccessBlockConfiguration struct {
 type BucketLoggingStatus struct {
 	XMLName        xml.Name        `xml:"BucketLoggingStatus"`
 	Xmlns          string          `xml:"xmlns,attr"`
-	LoggingEnabled *LoggingEnabled `xml:"LoggingEnabled,omitempty"`
+	LoggingEnabled *LoggingEnabled `xml:"LoggingEnabled"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_LoggingEnabled.html
 type LoggingEnabled struct {
 	TargetBucket          string                 `xml:"TargetBucket"`
 	TargetPrefix          string                 `xml:"TargetPrefix"`
-	TargetGrants          *TargetGrants          `xml:"TargetGrants,omitempty"`
-	TargetObjectKeyFormat *TargetObjectKeyFormat `xml:"TargetObjectKeyFormat,omitempty"`
+	TargetGrants          *TargetGrants          `xml:"TargetGrants"`
+	TargetObjectKeyFormat *TargetObjectKeyFormat `xml:"TargetObjectKeyFormat"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_TargetGrant.html
@@ -450,8 +450,8 @@ type TargetGrants struct {
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_TargetObjectKeyFormat.html
 type TargetObjectKeyFormat struct {
-	PartitionedPrefix *PartitionedPrefix `xml:"PartitionedPrefix,omitempty"`
-	SimplePrefix      *SimplePrefix      `xml:"SimplePrefix,omitempty"`
+	PartitionedPrefix *PartitionedPrefix `xml:"PartitionedPrefix"`
+	SimplePrefix      *SimplePrefix      `xml:"SimplePrefix"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PartitionedPrefix.html
@@ -471,10 +471,91 @@ type SimplePrefix struct{}
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Grantee.html
 type Grantee struct {
 	XMLName      xml.Name `xml:"Grantee"`
-	XmlnsXsi     string   `xml:"xmlns:xsi,attr,omitempty"`
+	XmlnsXsi     string   `xml:"xmlns:xsi,attr"`
 	XsiType      string   `xml:"xsi:type,attr"`
-	ID           string   `xml:"ID,omitempty"`
-	DisplayName  string   `xml:"DisplayName,omitempty"`
-	URI          string   `xml:"URI,omitempty"`
-	EmailAddress string   `xml:"EmailAddress,omitempty"`
+	ID           string   `xml:"ID"`
+	DisplayName  string   `xml:"DisplayName"`
+	URI          string   `xml:"URI"`
+	EmailAddress string   `xml:"EmailAddress"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_AccessControlPolicy.html
+type AccessControlPolicy struct {
+	XMLName           xml.Name          `xml:"AccessControlPolicy"`
+	Xmlns             string            `xml:"xmlns,attr"`
+	Owner             Owner             `xml:"Owner"`
+	AccessControlList AccessControlList `xml:"AccessControlList"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketAcl.html#AmazonS3-GetBucketAcl-response-Grants
+type AccessControlList struct {
+	Grants []Grant `xml:"Grant"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html#AmazonS3-GetBucketLifecycle-response-GetBucketLifecycleOutput
+type LifecycleConfiguration struct {
+	XMLName xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ LifecycleConfiguration"`
+	Rules   []Rule   `xml:"Rule"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Rule.html
+type Rule struct {
+	ID                             string                          `xml:"ID"`
+	Status                         string                          `xml:"Status"`
+	Filter                         *LifecycleRuleFilter            `xml:"Filter"`
+	Prefix                         string                          `xml:"Prefix"`
+	Expiration                     *LifecycleExpiration            `xml:"Expiration"`
+	Transitions                    []Transition                    `xml:"Transition"`
+	NoncurrentVersionExpiration    *NoncurrentVersionExpiration    `xml:"NoncurrentVersionExpiration"`
+	NoncurrentVersionTransitions   []NoncurrentVersionTransition   `xml:"NoncurrentVersionTransition"`
+	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_LifecycleRuleFilter.html
+type LifecycleRuleFilter struct {
+	And                   *LifecycleRuleAndOperator `xml:"And"`
+	Prefix                string                    `xml:"Prefix"`
+	Tag                   *Tag                      `xml:"Tag"`
+	ObjectSizeGreaterThan int64                     `xml:"ObjectSizeGreaterThan"`
+	ObjectSizeLessThan    int64                     `xml:"ObjectSizeLessThan"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_LifecycleRuleAndOperator.html
+type LifecycleRuleAndOperator struct {
+	Prefix                string `xml:"Prefix"`
+	Tags                  []Tag  `xml:"Tag"`
+	ObjectSizeGreaterThan int64  `xml:"ObjectSizeGreaterThan"`
+	ObjectSizeLessThan    int64  `xml:"ObjectSizeLessThan"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_LifecycleExpiration.html
+type LifecycleExpiration struct {
+	Date                      string `xml:"Date"` // ISO8601 format expected
+	Days                      int    `xml:"Days"`
+	ExpiredObjectDeleteMarker bool   `xml:"ExpiredObjectDeleteMarker"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Transition.html
+type Transition struct {
+	Date         string `xml:"Date"` // ISO8601 format
+	Days         int    `xml:"Days"`
+	StorageClass string `xml:"StorageClass"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_NoncurrentVersionExpiration.html
+type NoncurrentVersionExpiration struct {
+	NoncurrentDays          int `xml:"NoncurrentDays"`
+	NewerNoncurrentVersions int `xml:"NewerNoncurrentVersions"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_NoncurrentVersionTransition.html
+type NoncurrentVersionTransition struct {
+	NoncurrentDays          int    `xml:"NoncurrentDays"`
+	NewerNoncurrentVersions int    `xml:"NewerNoncurrentVersions"`
+	StorageClass            string `xml:"StorageClass"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortIncompleteMultipartUpload.html
+type AbortIncompleteMultipartUpload struct {
+	DaysAfterInitiation int `xml:"DaysAfterInitiation"`
 }
