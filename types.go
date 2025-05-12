@@ -492,19 +492,6 @@ type Grantee struct {
 	EmailAddress string   `xml:"EmailAddress"`
 }
 
-// https://docs.aws.amazon.com/AmazonS3/latest/API/API_AccessControlPolicy.html
-type AccessControlPolicy struct {
-	XMLName           xml.Name          `xml:"AccessControlPolicy"`
-	Xmlns             string            `xml:"xmlns,attr"`
-	Owner             Owner             `xml:"Owner"`
-	AccessControlList AccessControlList `xml:"AccessControlList"`
-}
-
-// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketAcl.html#AmazonS3-GetBucketAcl-response-Grants
-type AccessControlList struct {
-	Grants []Grant `xml:"Grant"`
-}
-
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html#AmazonS3-GetBucketLifecycle-response-GetBucketLifecycleOutput
 type LifecycleConfiguration struct {
 	XMLName xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ LifecycleConfiguration"`
