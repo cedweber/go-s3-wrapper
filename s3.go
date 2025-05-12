@@ -974,15 +974,14 @@ func (c *Client) DeleteBucketTagging(ctx context.Context, bucketName string) err
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectLockConfiguration.html
 func (c *Client) PutObjectLockConfiguration(ctx context.Context, bucketName string, filePath string, config ObjectLockConfiguration) error {
 	query := make(map[string]string)
-	query["cors"] = ""
+	query["object-lock"] = ""
 
 	data, err := xml.Marshal(config)
 	if err != nil {
 		return err
 	}
 
-	// Complete Writing
-	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, filePath, query, data)
 	if err != nil {
 		return err
 	}
