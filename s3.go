@@ -475,6 +475,8 @@ func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName str
 	return resp, nil
 }
 
+// Multipart
+
 // Initiate Multipart Upload and receive the uploadId
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
 func (c *Client) CreateMultipartUpload(ctx context.Context, bucketName string, filePath string) (*InitiateMultipartUploadResult, error) {
@@ -540,7 +542,6 @@ func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string,
 		fmt.Printf("Error parsing response: %v", xmlData)
 	}
 
-	// Complete Writing
 	endReq, err := c.newRequestWithQuery(ctx, http.MethodPost, bucketName, objectName, query, xmlData)
 	if err != nil {
 		return err
@@ -566,7 +567,6 @@ func (c *Client) ListMultipartUploads(ctx context.Context, bucketName string, qu
 
 	query["uploads"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
 		return nil, err
@@ -600,7 +600,6 @@ func (c *Client) AbortMultipartUpload(ctx context.Context, bucketName string, fi
 	query := make(map[string]string)
 	query["uploadId"] = uploadId
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, filePath, query, nil)
 	if err != nil {
 		return err
@@ -716,7 +715,6 @@ func (c *Client) GetObjectAttributes(ctx context.Context, bucketName string, fil
 
 	query["attributes"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
 	if err != nil {
 		return nil, err
@@ -744,7 +742,6 @@ func (c *Client) GetObjectAttributes(ctx context.Context, bucketName string, fil
 func (c *Client) ListDirectoryBuckets(ctx context.Context, query map[string]string) (*ListAllMyDirectoryBucketsResult, error) {
 	var list ListAllMyDirectoryBucketsResult
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, "", "", query, nil)
 	if err != nil {
 		return nil, err
@@ -768,6 +765,7 @@ func (c *Client) ListDirectoryBuckets(ctx context.Context, query map[string]stri
 }
 
 // Website
+
 // Retrieve bucket website configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketWebsite.html
 func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*WebsiteConfiguration, error) {
@@ -775,7 +773,6 @@ func (c *Client) GetBucketWebsite(ctx context.Context, bucketName string) (*Webs
 	query := make(map[string]string)
 	query["website"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
 		return nil, err
@@ -958,7 +955,6 @@ func (c *Client) DeleteBucketTagging(ctx context.Context, bucketName string) err
 	query := make(map[string]string)
 	query["tagging"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
 	if err != nil {
 		return err
@@ -971,4 +967,340 @@ func (c *Client) DeleteBucketTagging(ctx context.Context, bucketName string) err
 
 	return nil
 
+}
+
+// Object Lock
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectLockConfiguration.html
+func (c *Client) PutObjectLockConfiguration(ctx context.Context, bucketName string, filePath string, config ObjectLockConfiguration) error {
+	query := make(map[string]string)
+	query["cors"] = ""
+
+	data, err := xml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLockConfiguration.html
+func (c *Client) GetObjectLockConfiguration(ctx context.Context, bucketName string) (*ObjectLockConfiguration, error) {
+	var config ObjectLockConfiguration
+	query := make(map[string]string)
+	query["object-lock"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+
+}
+
+// Object Retention
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectRetention.html
+func (c *Client) GetObjectRetention(ctx context.Context, bucketName string, filePath string) (*Retention, error) {
+	var retention Retention
+	query := make(map[string]string)
+	query["retention"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&retention)
+	if err != nil {
+		return nil, err
+	}
+
+	return &retention, nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectRetention.html
+func (c *Client) PutObjectRetention(ctx context.Context, bucketName string, filePath string, retention Retention) error {
+	query := make(map[string]string)
+	query["retention"] = ""
+
+	data, err := xml.Marshal(retention)
+	if err != nil {
+		return err
+	}
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Get object access control list
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectAcl.html
+func (c *Client) GetObjectAcl(ctx context.Context, bucketName string, filePath string, versionId string) (*AccessControlPolicy, error) {
+	var policy AccessControlPolicy
+	query := make(map[string]string)
+	query["acl"] = ""
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policy, nil
+}
+
+// Put object access control list
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectAcl.html
+func (c *Client) PutObjectAcl(ctx context.Context, bucketName string, filePath string, policy AccessControlPolicy) (string, error) {
+	query := make(map[string]string)
+	query["acl"] = ""
+
+	data, err := xml.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, filePath, query, data)
+	if err != nil {
+		return "", err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	resp, err := c.do(req)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Header.Get("x-amz-request-charged"), nil
+}
+
+// ACL
+
+// Get bucket access control list
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketAcl.html
+func (c *Client) GetBucketAcl(ctx context.Context, bucketName string, filePath string) (*AccessControlPolicy, error) {
+	var policy AccessControlPolicy
+	query := make(map[string]string)
+	query["acl"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policy, nil
+}
+
+// Put Bucket Access Control List
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAcl.html
+func (c *Client) PutBucketAcl(ctx context.Context, bucketName string, policy AccessControlPolicy) error {
+	query := make(map[string]string)
+	query["acl"] = ""
+
+	data, err := xml.Marshal(policy)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Logging
+
+// Get bucket logging information
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLogging.html
+func (c *Client) GetBucketLogging(ctx context.Context, bucketName string) (*BucketLoggingStatus, error) {
+	var config BucketLoggingStatus
+	query := make(map[string]string)
+	query["logging"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// Put Bucket Logging
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLogging.html
+func (c *Client) PutBucketLogging(ctx context.Context, bucketName string, config BucketLoggingStatus) error {
+	query := make(map[string]string)
+	query["logging"] = ""
+
+	data, err := xml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Access Block
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetPublicAccessBlock.html
+func (c *Client) GetPublicAccessBlock(ctx context.Context, bucketName string) (*PublicAccessBlockConfiguration, error) {
+	var config PublicAccessBlockConfiguration
+	query := make(map[string]string)
+	query["publicAccessBlock"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutPublicAccessBlock.html
+func (c *Client) PutPublicAccessBlock(ctx context.Context, bucketName string, config PublicAccessBlockConfiguration) error {
+	query := make(map[string]string)
+	query["publicAccessBlock"] = ""
+
+	data, err := xml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Remove PublicAccessBlock config for a bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeletePublicAccessBlock.html
+func (c *Client) DeletePublicAccessBlock(ctx context.Context, bucketName string) error {
+	query := make(map[string]string)
+	query["publicAccessBlock"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -391,3 +391,90 @@ type VersioningConfiguration struct {
 	Status    string   `xml:"Status"`
 	MfaDelete string   `xml:"MfaDelete"`
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLockConfiguration.html#AmazonS3-GetObjectLockConfiguration-response-ObjectLockConfigurationhttps://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLockConfiguration.html#AmazonS3-GetObjectLockConfiguration-response-ObjectLockConfiguration
+type ObjectLockConfiguration struct {
+	XMLName           xml.Name        `xml:"ObjectLockConfiguration"`
+	ObjectLockEnabled string          `xml:"ObjectLockEnabled"`
+	Rule              *ObjectLockRule `xml:"Rule"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ObjectLockRule.html
+type ObjectLockRule struct {
+	DefaultRetention DefaultRetention `xml:"DefaultRetention"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DefaultRetention.html
+type DefaultRetention struct {
+	Days  int    `xml:"Days"`
+	Mode  string `xml:"Mode"`
+	Years int    `xml:"Years"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectRetention.html#API_PutObjectRetention_RequestSyntax
+type Retention struct {
+	XMLName         xml.Name `xml:"Retention"`
+	Mode            string   `xml:"Mode"`            // e.g., "GOVERNANCE" or "COMPLIANCE"
+	RetainUntilDate string   `xml:"RetainUntilDate"` // ISO8601 timestamp, e.g., "2025-12-31T00:00:00Z"
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetPublicAccessBlock.html#API_GetPublicAccessBlock_ResponseSyntax
+type PublicAccessBlockConfiguration struct {
+	XMLName               xml.Name `xml:"PublicAccessBlockConfiguration"`
+	Xmlns                 string   `xml:"xmlns,attr"`
+	BlockPublicAcls       bool     `xml:"BlockPublicAcls"`
+	IgnorePublicAcls      bool     `xml:"IgnorePublicAcls"`
+	BlockPublicPolicy     bool     `xml:"BlockPublicPolicy"`
+	RestrictPublicBuckets bool     `xml:"RestrictPublicBuckets"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLogging.html#AmazonS3-GetBucketLogging-response-GetBucketLoggingOutput
+type BucketLoggingStatus struct {
+	XMLName        xml.Name        `xml:"BucketLoggingStatus"`
+	Xmlns          string          `xml:"xmlns,attr"`
+	LoggingEnabled *LoggingEnabled `xml:"LoggingEnabled,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_LoggingEnabled.html
+type LoggingEnabled struct {
+	TargetBucket          string                 `xml:"TargetBucket"`
+	TargetPrefix          string                 `xml:"TargetPrefix"`
+	TargetGrants          *TargetGrants          `xml:"TargetGrants,omitempty"`
+	TargetObjectKeyFormat *TargetObjectKeyFormat `xml:"TargetObjectKeyFormat,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_TargetGrant.html
+type TargetGrants struct {
+	Grants []Grant `xml:"Grant"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_TargetObjectKeyFormat.html
+type TargetObjectKeyFormat struct {
+	PartitionedPrefix *PartitionedPrefix `xml:"PartitionedPrefix,omitempty"`
+	SimplePrefix      *SimplePrefix      `xml:"SimplePrefix,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PartitionedPrefix.html
+type PartitionedPrefix struct {
+	PartitionDateSource string `xml:"PartitionDateSource"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Grant.html
+type Grant struct {
+	Grantee    Grantee `xml:"Grantee"`
+	Permission string  `xml:"Permission"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_SimplePrefix.html
+type SimplePrefix struct{}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_Grantee.html
+type Grantee struct {
+	XMLName      xml.Name `xml:"Grantee"`
+	XmlnsXsi     string   `xml:"xmlns:xsi,attr,omitempty"`
+	XsiType      string   `xml:"xsi:type,attr"`
+	ID           string   `xml:"ID,omitempty"`
+	DisplayName  string   `xml:"DisplayName,omitempty"`
+	URI          string   `xml:"URI,omitempty"`
+	EmailAddress string   `xml:"EmailAddress,omitempty"`
+}
