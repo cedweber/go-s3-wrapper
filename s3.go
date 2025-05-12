@@ -1374,3 +1374,79 @@ func (c *Client) DeleteBucketLifecycle(ctx context.Context, bucketName string) e
 
 	return nil
 }
+
+// Bucket Metadata
+
+// Get bucket metadata table config
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetadataTableConfiguration.html
+func (c *Client) GetBucketMetadataTableConfiguratio(ctx context.Context, bucketName string) (*GetBucketMetadataTableConfigurationResult, error) {
+
+	var metadata GetBucketMetadataTableConfigurationResult
+	query := make(map[string]string)
+	query["metadataTable"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metadata, nil
+}
+
+// Create bucket metadata table configuration
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucketMetadataTableConfiguration.html
+func (c *Client) CreateBucketMetadataTableConfiguration(ctx context.Context, bucketName string, metadata MetadataTableConfiguration) error {
+
+	query := make(map[string]string)
+	query["metadataTable"] = ""
+
+	data, err := xml.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodPost, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+// Delete bucket metadata configuration
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketMetadataTableConfiguration.html
+func (c *Client) DeleteBucketMetadataTableConfiguration(ctx context.Context, bucketName string) error {
+
+	query := make(map[string]string)
+	query["metadataTable"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, []byte{})
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
