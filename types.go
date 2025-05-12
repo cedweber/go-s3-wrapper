@@ -459,6 +459,19 @@ type PartitionedPrefix struct {
 	PartitionDateSource string `xml:"PartitionDateSource"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectAcl.html#AmazonS3-GetObjectAcl-response-GetObjectAclOutput
+type AccessControlPolicy struct {
+	XMLName           xml.Name          `xml:"AccessControlPolicy"`
+	Xmlns             string            `xml:"xmlns,attr"`
+	Owner             Owner             `xml:"Owner"`
+	AccessControlList AccessControlList `xml:"AccessControlList"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectAcl.html#AmazonS3-GetObjectAcl-response-Grants
+type AccessControlList struct {
+	Grants []Grant `xml:"Grant"`
+}
+
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_Grant.html
 type Grant struct {
 	Grantee    Grantee `xml:"Grantee"`
