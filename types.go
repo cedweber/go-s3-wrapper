@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"time"
@@ -490,4 +491,30 @@ type Grantee struct {
 	DisplayName  string   `xml:"DisplayName,omitempty"`
 	URI          string   `xml:"URI,omitempty"`
 	EmailAddress string   `xml:"EmailAddress,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html
+type BucketPolicy struct {
+	Version   string      `json:"Version"`
+	Id        string      `json:"Id,omitempty"`
+	Statement []Statement `json:"Statement"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html
+type Statement struct {
+	Sid       string             `json:"Sid,omitempty"`
+	Effect    string             `json:"Effect"`
+	Principal json.RawMessage    `json:"Principal"` // supports object or string
+	Action    interface{}        `json:"Action"`    // string or []string
+	Resource  interface{}        `json:"Resource"`  // string or []string
+	Condition StatementCondition `json:"Condition,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html
+type StatementCondition map[string]map[string]interface{}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketPolicyStatus.html#AmazonS3-GetBucketPolicyStatus-response-PolicyStatus
+type PolicyStatus struct {
+	XMLName  xml.Name `xml:"PolicyStatus"`
+	IsPublic bool     `xml:"IsPublic"`
 }
