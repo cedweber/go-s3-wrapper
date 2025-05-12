@@ -1310,7 +1310,7 @@ func (c *Client) DeletePublicAccessBlock(ctx context.Context, bucketName string)
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketNotificationConfiguration.html
 func (c *Client) GetBucketNotificationConfiguration(ctx context.Context, bucketName string) (*NotificationConfiguration, error) {
 	var config NotificationConfiguration
-	var query map[string]string
+	query := make(map[string]string)
 	query["notification"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
@@ -1333,7 +1333,7 @@ func (c *Client) GetBucketNotificationConfiguration(ctx context.Context, bucketN
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotification.html
 func (c *Client) PutBucketNotificationConfiguration(ctx context.Context, bucketName string, config NotificationConfiguration) error {
-	var query map[string]string
+	query := make(map[string]string)
 	query["notification"] = ""
 
 	data, err := xml.Marshal(config)
