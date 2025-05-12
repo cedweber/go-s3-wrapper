@@ -559,3 +559,30 @@ type NoncurrentVersionTransition struct {
 type AbortIncompleteMultipartUpload struct {
 	DaysAfterInitiation int `xml:"DaysAfterInitiation"`
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetadataTableConfiguration.html#AmazonS3-GetBucketMetadataTableConfiguration-response-GetBucketMetadataTableConfigurationResult
+type GetBucketMetadataTableConfigurationResult struct {
+	XMLName                    xml.Name                         `xml:"GetBucketMetadataTableConfigurationResult"`
+	MetadataTableConfiguration MetadataTableConfigurationResult `xml:"MetadataTableConfigurationResult"`
+	Status                     string                           `xml:"Status"`
+	Error                      *ErrorDetails                    `xml:"Error"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ErrorDetails.html
+type ErrorDetails struct {
+	ErrorCode    string `xml:"ErrorCode"`
+	ErrorMessage string `xml:"ErrorMessage"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_MetadataTableConfigurationResult.html
+type MetadataTableConfigurationResult struct {
+	S3TablesDestination S3TablesDestinationResult `xml:"S3TablesDestinationResult"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_S3TablesDestinationResult.html
+type S3TablesDestinationResult struct {
+	TableArn       string `xml:"TableArn"`
+	TableBucketArn string `xml:"TableBucketArn"`
+	TableName      string `xml:"TableName"`
+	TableNamespace string `xml:"TableNamespace"`
+}
