@@ -1303,3 +1303,52 @@ func (c *Client) DeletePublicAccessBlock(ctx context.Context, bucketName string)
 
 	return nil
 }
+
+// Notifications
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketNotificationConfiguration.html
+func (c *Client) GetBucketNotificationConfiguration(ctx context.Context, bucketName string) (*NotificationConfiguration, error) {
+	var config NotificationConfiguration
+	query := make(map[string]string)
+	query["notification"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotification.html
+func (c *Client) PutBucketNotificationConfiguration(ctx context.Context, bucketName string, config NotificationConfiguration) error {
+	query := make(map[string]string)
+	query["notification"] = ""
+
+	data, err := xml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
