@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -646,6 +647,37 @@ func (c *Client) ListParts(ctx context.Context, bucketName string, filePath stri
 }
 
 // Tagging
+
+// Get object tags
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html
+func (c *Client) GetObjectTagging(ctx context.Context, bucketName string, filePath string, versionId string) (*Tagging, error) {
+	query := make(map[string]string)
+	var attributes Tagging
+
+	query["attributes"] = ""
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, []byte{})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&attributes)
+	if err != nil {
+		fmt.Println("Error parsing XML:", err)
+		return nil, err
+	}
+
+	return &attributes, nil
+}
 
 // Put/Update object tagging
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectTagging.html
@@ -1290,6 +1322,319 @@ func (c *Client) PutPublicAccessBlock(ctx context.Context, bucketName string, co
 func (c *Client) DeletePublicAccessBlock(ctx context.Context, bucketName string) error {
 	query := make(map[string]string)
 	query["publicAccessBlock"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Notifications
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketNotificationConfiguration.html
+func (c *Client) GetBucketNotificationConfiguration(ctx context.Context, bucketName string) (*NotificationConfiguration, error) {
+	var config NotificationConfiguration
+	query := make(map[string]string)
+	query["notification"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotification.html
+func (c *Client) PutBucketNotificationConfiguration(ctx context.Context, bucketName string, config NotificationConfiguration) error {
+	query := make(map[string]string)
+	query["notification"] = ""
+
+	data, err := xml.Marshal(config)
+	if err != nil {
+		return err
+	}
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Metrics
+
+// get bucket metrics
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetricsConfiguration.html
+func (c *Client) GetBucketMetricsConfiguration(ctx context.Context, bucketName string, id string) (*MetricsConfiguration, error) {
+	var config MetricsConfiguration
+	query := make(map[string]string)
+	query["metrics"] = ""
+	query["id"] = id
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// list metrics config
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBucketMetricsConfigurations.html
+func (c *Client) ListBucketMetricsConfigurations(ctx context.Context, bucketName string, continuationToken string) (*ListMetricsConfigurationsResult, error) {
+	var config ListMetricsConfigurationsResult
+	query := make(map[string]string)
+	query["metrics"] = ""
+
+	if continuationToken != "" {
+		query["continuation-token"] = continuationToken
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// put bucket metrics
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketMetricsConfiguration.html
+func (c *Client) PutBucketMetricsConfiguration(ctx context.Context, bucketName string, config MetricsConfiguration, id string) error {
+	query := make(map[string]string)
+	query["metrics"] = ""
+	query["id"] = id
+
+	data, err := xml.Marshal(config)
+	if err != nil {
+		return err
+	}
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete bucket metric config
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketMetricsConfiguration.html
+func (c *Client) DeleteBucketMetricsConfiguration(ctx context.Context, bucketName string, id string) error {
+	query := make(map[string]string)
+
+	query["metrics"] = ""
+	query["id"] = id
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Legal hold
+
+// Get object hold status
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLegalHold.html
+func (c *Client) GetObjectLegalHold(ctx context.Context, bucketName string, filePath string, versionId string) (*LegalHold, error) {
+	query := make(map[string]string)
+
+	var hold LegalHold
+	query["legal-hold"] = ""
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&hold)
+	if err != nil {
+		fmt.Println("Error parsing XML:", err)
+		return nil, err
+	}
+
+	return &hold, err
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectLegalHold.html
+func (c *Client) PutObjectLegalHold(ctx context.Context, bucketName string, filePath string, hold LegalHold, versionId string) error {
+	query := make(map[string]string)
+	query["legal-hold"] = ""
+
+	data, err := xml.Marshal(hold)
+	if err != nil {
+		return err
+	}
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, filePath, query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Bucket Policy
+
+// Get bucket policy status
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketPolicyStatus.html
+func (c *Client) GetBucketPolicyStatus(ctx context.Context, bucketName string) (*PolicyStatus, error) {
+	var policyStatus PolicyStatus
+	query := make(map[string]string)
+	query["policyStatus"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&policyStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policyStatus, nil
+}
+
+// Get the buckets policy
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketPolicy.html
+func (c *Client) GetBucketPolicy(ctx context.Context, bucketName string) (*BucketPolicy, error) {
+	var policy BucketPolicy
+	query := make(map[string]string)
+	query["policy"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policy, nil
+}
+
+// Update the policy of a single bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html
+func (c *Client) PutBucketPolicy(ctx context.Context, bucketName string, policy BucketPolicy) error {
+	query := make(map[string]string)
+	query["policy"] = ""
+
+	data, err := json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete the policy of a single bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketPolicy.html
+func (c *Client) DeleteBucketPolicy(ctx context.Context, bucketName string) error {
+	query := make(map[string]string)
+	query["policy"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
 	if err != nil {
