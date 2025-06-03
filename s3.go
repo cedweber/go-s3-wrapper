@@ -671,7 +671,7 @@ func (c *Client) GetObjectTagging(ctx context.Context, bucketName string, filePa
 		query["versionId"] = versionId
 	}
 
-	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, []byte{})
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -889,6 +889,7 @@ func (c *Client) DeleteBucketWebsite(ctx context.Context, bucketName string) err
 
 // Bucket Versioning
 
+// Get bucket versioning
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html
 func (c *Client) GetBucketVersioning(ctx context.Context, bucketName string) (*VersioningConfiguration, error) {
 	var config VersioningConfiguration
@@ -1023,6 +1024,7 @@ func (c *Client) DeleteBucketTagging(ctx context.Context, bucketName string) err
 
 // Object Lock
 
+// Put object lock config
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectLockConfiguration.html
 func (c *Client) PutObjectLockConfiguration(ctx context.Context, bucketName string, filePath string, config ObjectLockConfiguration) error {
 	query := make(map[string]string)
@@ -1052,6 +1054,7 @@ func (c *Client) PutObjectLockConfiguration(ctx context.Context, bucketName stri
 	return nil
 }
 
+// Get obj lock config
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLockConfiguration.html
 func (c *Client) GetObjectLockConfiguration(ctx context.Context, bucketName string) (*ObjectLockConfiguration, error) {
 	var config ObjectLockConfiguration
@@ -1079,6 +1082,7 @@ func (c *Client) GetObjectLockConfiguration(ctx context.Context, bucketName stri
 
 // Object Retention
 
+// Retrieve current obj retention
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectRetention.html
 func (c *Client) GetObjectRetention(ctx context.Context, bucketName string, filePath string) (*Retention, error) {
 	var retention Retention
@@ -1103,6 +1107,7 @@ func (c *Client) GetObjectRetention(ctx context.Context, bucketName string, file
 	return &retention, nil
 }
 
+// Put object retention
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectRetention.html
 func (c *Client) PutObjectRetention(ctx context.Context, bucketName string, filePath string, retention Retention) error {
 	query := make(map[string]string)
@@ -1113,7 +1118,6 @@ func (c *Client) PutObjectRetention(ctx context.Context, bucketName string, file
 		return err
 	}
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
 	if err != nil {
 		return err
@@ -1219,7 +1223,7 @@ func (c *Client) GetBucketAcl(ctx context.Context, bucketName string, filePath s
 	return &policy, nil
 }
 
-// Put Bucket Access Control List
+// Put bucket access control list
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAcl.html
 func (c *Client) PutBucketAcl(ctx context.Context, bucketName string, policy AccessControlPolicy) error {
 	query := make(map[string]string)
@@ -1270,7 +1274,7 @@ func (c *Client) GetBucketLogging(ctx context.Context, bucketName string) (*Buck
 	return &config, nil
 }
 
-// Put Bucket Logging
+// Put bucket logging
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLogging.html
 func (c *Client) PutBucketLogging(ctx context.Context, bucketName string, config BucketLoggingStatus) error {
 	query := make(map[string]string)
@@ -1296,6 +1300,7 @@ func (c *Client) PutBucketLogging(ctx context.Context, bucketName string, config
 
 // Access Block
 
+// Retrieve access block configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetPublicAccessBlock.html
 func (c *Client) GetPublicAccessBlock(ctx context.Context, bucketName string) (*PublicAccessBlockConfiguration, error) {
 	var config PublicAccessBlockConfiguration
@@ -1320,6 +1325,7 @@ func (c *Client) GetPublicAccessBlock(ctx context.Context, bucketName string) (*
 	return &config, nil
 }
 
+// Put access block configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutPublicAccessBlock.html
 func (c *Client) PutPublicAccessBlock(ctx context.Context, bucketName string, config PublicAccessBlockConfiguration) error {
 	query := make(map[string]string)
@@ -1370,6 +1376,7 @@ func (c *Client) DeletePublicAccessBlock(ctx context.Context, bucketName string)
 
 // Notifications
 
+// Get the buckets current notification configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketNotificationConfiguration.html
 func (c *Client) GetBucketNotificationConfiguration(ctx context.Context, bucketName string) (*NotificationConfiguration, error) {
 	var config NotificationConfiguration
@@ -1394,6 +1401,7 @@ func (c *Client) GetBucketNotificationConfiguration(ctx context.Context, bucketN
 	return &config, nil
 }
 
+// Update the notification configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotification.html
 func (c *Client) PutBucketNotificationConfiguration(ctx context.Context, bucketName string, config NotificationConfiguration) error {
 	query := make(map[string]string)
@@ -1418,7 +1426,7 @@ func (c *Client) PutBucketNotificationConfiguration(ctx context.Context, bucketN
 
 // Metrics
 
-// get bucket metrics
+// Get bucket metrics
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetricsConfiguration.html
 func (c *Client) GetBucketMetricsConfiguration(ctx context.Context, bucketName string, id string) (*MetricsConfiguration, error) {
 	var config MetricsConfiguration
@@ -1444,7 +1452,7 @@ func (c *Client) GetBucketMetricsConfiguration(ctx context.Context, bucketName s
 	return &config, nil
 }
 
-// list metrics config
+// List metrics config
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBucketMetricsConfigurations.html
 func (c *Client) ListBucketMetricsConfigurations(ctx context.Context, bucketName string, continuationToken string) (*ListMetricsConfigurationsResult, error) {
 	var config ListMetricsConfigurationsResult
@@ -1473,7 +1481,7 @@ func (c *Client) ListBucketMetricsConfigurations(ctx context.Context, bucketName
 	return &config, nil
 }
 
-// put bucket metrics
+// Put bucket metrics
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketMetricsConfiguration.html
 func (c *Client) PutBucketMetricsConfiguration(ctx context.Context, bucketName string, config MetricsConfiguration, id string) error {
 	query := make(map[string]string)
@@ -1551,6 +1559,7 @@ func (c *Client) GetObjectLegalHold(ctx context.Context, bucketName string, file
 	return &hold, err
 }
 
+// Put object legal hold information
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectLegalHold.html
 func (c *Client) PutObjectLegalHold(ctx context.Context, bucketName string, filePath string, hold LegalHold, versionId string) error {
 	query := make(map[string]string)
@@ -1593,7 +1602,6 @@ func (c *Client) GetBucketPolicyStatus(ctx context.Context, bucketName string) (
 	query := make(map[string]string)
 	query["policyStatus"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
 		return nil, err
@@ -1619,7 +1627,6 @@ func (c *Client) GetBucketPolicy(ctx context.Context, bucketName string) (*Bucke
 	query := make(map[string]string)
 	query["policy"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
 		return nil, err
@@ -1687,6 +1694,7 @@ func (c *Client) DeleteBucketPolicy(ctx context.Context, bucketName string) erro
 	return nil
 }
 
+// Retrieve a bucket lifecycle configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycleConfiguration.html
 func (c *Client) GetBucketLifecycleConfiguration(ctx context.Context, bucketName string) (*LifecycleConfiguration, error) {
 	var config LifecycleConfiguration
@@ -1711,6 +1719,7 @@ func (c *Client) GetBucketLifecycleConfiguration(ctx context.Context, bucketName
 	return &config, nil
 }
 
+// Put a new lifecycle configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html
 func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName string, lifecycle LifecycleConfiguration) (string, error) {
 	var query map[string]string
@@ -1721,7 +1730,6 @@ func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName
 		return "", err
 	}
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
 	if err != nil {
 		return "", err
@@ -1741,12 +1749,12 @@ func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName
 	return resp.Header.Get("x-amz-transition-default-minimum-object-size"), nil
 }
 
+// Delete bucket lifecycle
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_DeleteBucketLifecycleConfiguration.html
 func (c *Client) DeleteBucketLifecycle(ctx context.Context, bucketName string) error {
 	var query map[string]string
 	query["lifecycle"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, fmt.Sprintf("/v20180820/bucket/%s/lifecycleconfiguration", bucketName), query, nil)
 	if err != nil {
 		return err
@@ -1770,7 +1778,6 @@ func (c *Client) GetBucketMetadataTableConfiguratio(ctx context.Context, bucketN
 	query := make(map[string]string)
 	query["metadataTable"] = ""
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
 	if err != nil {
 		return nil, err
@@ -1801,7 +1808,6 @@ func (c *Client) CreateBucketMetadataTableConfiguration(ctx context.Context, buc
 		return err
 	}
 
-	// Complete Writing
 	req, err := c.newRequestWithQuery(ctx, http.MethodPost, bucketName, "", query, data)
 	if err != nil {
 		return err
@@ -1825,8 +1831,7 @@ func (c *Client) DeleteBucketMetadataTableConfiguration(ctx context.Context, buc
 	query := make(map[string]string)
 	query["metadataTable"] = ""
 
-	// Complete Writing
-	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, []byte{})
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
 	if err != nil {
 		return err
 	}
