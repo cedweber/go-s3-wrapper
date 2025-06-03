@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -1539,6 +1540,106 @@ func (c *Client) PutObjectLegalHold(ctx context.Context, bucketName string, file
 
 	hash := md5.New().Sum(data)
 	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Bucket Policy
+
+// Get bucket policy status
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketPolicyStatus.html
+func (c *Client) GetBucketPolicyStatus(ctx context.Context, bucketName string) (*PolicyStatus, error) {
+	var policyStatus PolicyStatus
+	query := make(map[string]string)
+	query["policyStatus"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&policyStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policyStatus, nil
+}
+
+// Get the buckets policy
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketPolicy.html
+func (c *Client) GetBucketPolicy(ctx context.Context, bucketName string) (*BucketPolicy, error) {
+	var policy BucketPolicy
+	query := make(map[string]string)
+	query["policy"] = ""
+
+	// Complete Writing
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policy, nil
+}
+
+// Update the policy of a single bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html
+func (c *Client) PutBucketPolicy(ctx context.Context, bucketName string, policy BucketPolicy) error {
+	query := make(map[string]string)
+	query["policy"] = ""
+
+	data, err := json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, "", query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete the policy of a single bucket
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketPolicy.html
+func (c *Client) DeleteBucketPolicy(ctx context.Context, bucketName string) error {
+	query := make(map[string]string)
+	query["policy"] = ""
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, "", query, nil)
+	if err != nil {
+		return err
+	}
 
 	_, err = c.do(req)
 	if err != nil {
