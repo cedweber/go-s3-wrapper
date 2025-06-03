@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -1405,7 +1406,7 @@ func (c *Client) GetBucketMetadataTableConfiguratio(ctx context.Context, bucketN
 
 // Create bucket metadata table configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucketMetadataTableConfiguration.html
-func (c *Client) CreateBucketMetadataTableConfiguration(ctx context.Context, bucketName string, metadata MetadataTableConfiguration) error {
+func (c *Client) CreateBucketMetadataTableConfiguration(ctx context.Context, bucketName string, metadata MetadataTableConfigurationResult) error {
 
 	query := make(map[string]string)
 	query["metadataTable"] = ""
@@ -1420,6 +1421,9 @@ func (c *Client) CreateBucketMetadataTableConfiguration(ctx context.Context, buc
 	if err != nil {
 		return err
 	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", base64.StdEncoding.EncodeToString(hash))
 
 	_, err = c.do(req)
 	if err != nil {
