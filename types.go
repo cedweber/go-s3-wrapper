@@ -545,3 +545,35 @@ type LambdaFunctionConfiguration struct {
 	Events            []string                         `xml:"Event"`
 	Filter            *NotificationConfigurationFilter `xml:"Filter"`
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetricsConfiguration.html#AmazonS3-GetBucketMetricsConfiguration-response-MetricsConfiguration
+type MetricsConfiguration struct {
+	XMLName xml.Name       `xml:"MetricsConfiguration"`
+	Xmlns   string         `xml:"xmlns,attr"`
+	Id      string         `xml:"Id"`
+	Filter  *MetricsFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_MetricsFilter.html
+type MetricsFilter struct {
+	AccessPointArn string              `xml:"AccessPointArn"`
+	Prefix         string              `xml:"Prefix"`
+	Tag            *Tag                `xml:"Tag"`
+	And            *MetricsAndOperator `xml:"And"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_MetricsAndOperator.html
+type MetricsAndOperator struct {
+	AccessPointArn string `xml:"AccessPointArn"`
+	Prefix         string `xml:"Prefix"`
+	Tags           []Tag  `xml:"Tag"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBucketMetricsConfigurations.html#AmazonS3-ListBucketMetricsConfigurations-response-ListBucketMetricsConfigurationsOutput
+type ListMetricsConfigurationsResult struct {
+	XMLName               xml.Name               `xml:"ListMetricsConfigurationsResult"`
+	IsTruncated           bool                   `xml:"IsTruncated"`
+	ContinuationToken     string                 `xml:"ContinuationToken"`
+	NextContinuationToken string                 `xml:"NextContinuationToken"`
+	MetricsConfigurations []MetricsConfiguration `xml:"MetricsConfiguration"`
+}
