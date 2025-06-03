@@ -415,6 +415,23 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, d
 	return nil
 }
 
+// PutObject uploads an object to the specified bucket.
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
+func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader) (*http.Response, error) {
+	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return resp, nil
+}
+
 //	Delete a single specified object.
 //
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html
@@ -468,23 +485,6 @@ func (c *Client) DeleteObjects(ctx context.Context, bucketName string, objects D
 	}
 
 	return &deletionResponse, nil
-}
-
-// PutObject uploads an object to the specified bucket.
-// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
-func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader) (*http.Response, error) {
-	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, data)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return resp, nil
 }
 
 // Multipart
