@@ -493,6 +493,98 @@ type Grantee struct {
 	EmailAddress string   `xml:"EmailAddress,omitempty"`
 }
 
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_NotificationConfiguration.html
+type NotificationConfiguration struct {
+	XMLName                      xml.Name                      `xml:"NotificationConfiguration"`
+	XMLNS                        string                        `xml:"xmlns,attr,omitempty"`
+	TopicConfigurations          []TopicConfiguration          `xml:"TopicConfiguration,omitempty"`
+	QueueConfigurations          []QueueConfiguration          `xml:"QueueConfiguration,omitempty"`
+	CloudFunctionConfigurations  []LambdaFunctionConfiguration `xml:"CloudFunctionConfiguration,omitempty"`
+	EventBridgeConfiguration     *EventBridgeConfiguration     `xml:"EventBridgeConfiguration,omitempty"`
+	LambdaFunctionConfigurations []LambdaFunctionConfiguration `xml:"LambdaFunctionConfiguration,omitempty"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_TopicConfiguration.html
+type TopicConfiguration struct {
+	ID       string                           `xml:"Id"`
+	TopicArn string                           `xml:"Topic"`
+	Events   []string                         `xml:"Event"`
+	Filter   *NotificationConfigurationFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_QueueConfiguration.html
+type QueueConfiguration struct {
+	ID       string                           `xml:"Id"`
+	QueueArn string                           `xml:"Queue"`
+	Events   []string                         `xml:"Event"`
+	Filter   *NotificationConfigurationFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_EventBridgeConfiguration.html
+type EventBridgeConfiguration struct{}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_NotificationConfigurationFilter.html
+type NotificationConfigurationFilter struct {
+	Key *S3KeyFilter `xml:"Key"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_S3KeyFilter.html
+type S3KeyFilter struct {
+	FilterRules []FilterRule `xml:"FilterRule"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_FilterRule.html
+type FilterRule struct {
+	Name  string `xml:"Name"`
+	Value string `xml:"Value"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_LambdaFunctionConfiguration.html
+type LambdaFunctionConfiguration struct {
+	ID                string                           `xml:"Id"`
+	LambdaFunctionArn string                           `xml:"LambdaFunctionArn"`
+	Events            []string                         `xml:"Event"`
+	Filter            *NotificationConfigurationFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetricsConfiguration.html#AmazonS3-GetBucketMetricsConfiguration-response-MetricsConfiguration
+type MetricsConfiguration struct {
+	XMLName xml.Name       `xml:"MetricsConfiguration"`
+	Xmlns   string         `xml:"xmlns,attr"`
+	Id      string         `xml:"Id"`
+	Filter  *MetricsFilter `xml:"Filter"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_MetricsFilter.html
+type MetricsFilter struct {
+	AccessPointArn string              `xml:"AccessPointArn"`
+	Prefix         string              `xml:"Prefix"`
+	Tag            *Tag                `xml:"Tag"`
+	And            *MetricsAndOperator `xml:"And"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_MetricsAndOperator.html
+type MetricsAndOperator struct {
+	AccessPointArn string `xml:"AccessPointArn"`
+	Prefix         string `xml:"Prefix"`
+	Tags           []Tag  `xml:"Tag"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBucketMetricsConfigurations.html#AmazonS3-ListBucketMetricsConfigurations-response-ListBucketMetricsConfigurationsOutput
+type ListMetricsConfigurationsResult struct {
+	XMLName               xml.Name               `xml:"ListMetricsConfigurationsResult"`
+	IsTruncated           bool                   `xml:"IsTruncated"`
+	ContinuationToken     string                 `xml:"ContinuationToken"`
+	NextContinuationToken string                 `xml:"NextContinuationToken"`
+	MetricsConfigurations []MetricsConfiguration `xml:"MetricsConfiguration"`
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLegalHold.html#AmazonS3-GetObjectLegalHold-response-LegalHold
+type LegalHold struct {
+	XMLName xml.Name `xml:"LegalHold"`
+	Status  string   `xml:"Status"`
+}
+
 // https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html
 type BucketPolicy struct {
 	Version   string      `json:"Version"`
