@@ -577,3 +577,9 @@ type ListMetricsConfigurationsResult struct {
 	NextContinuationToken string                 `xml:"NextContinuationToken"`
 	MetricsConfigurations []MetricsConfiguration `xml:"MetricsConfiguration"`
 }
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLegalHold.html#AmazonS3-GetObjectLegalHold-response-LegalHold
+type LegalHold struct {
+	XMLName xml.Name `xml:"LegalHold"`
+	Status  string   `xml:"Status"`
+}

@@ -1484,3 +1484,66 @@ func (c *Client) DeleteBucketMetricsConfiguration(ctx context.Context, bucketNam
 
 	return nil
 }
+
+// Legal hold
+
+// Get object hold status
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectLegalHold.html
+func (c *Client) GetObjectLegalHold(ctx context.Context, bucketName string, filePath string, versionId string) (*LegalHold, error) {
+	query := make(map[string]string)
+
+	var hold LegalHold
+	query["legal-hold"] = ""
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&hold)
+	if err != nil {
+		fmt.Println("Error parsing XML:", err)
+		return nil, err
+	}
+
+	return &hold, err
+}
+
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectLegalHold.html
+func (c *Client) PutObjectLegalHold(ctx context.Context, bucketName string, filePath string, hold LegalHold, versionId string) error {
+	query := make(map[string]string)
+	query["legal-hold"] = ""
+
+	data, err := xml.Marshal(hold)
+	if err != nil {
+		return err
+	}
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodPut, bucketName, filePath, query, data)
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New().Sum(data)
+	req.Header.Set("Content-MD5", string(hash))
+
+	_, err = c.do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
