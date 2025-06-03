@@ -647,6 +647,37 @@ func (c *Client) ListParts(ctx context.Context, bucketName string, filePath stri
 
 // Tagging
 
+// Get object tags
+// https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html
+func (c *Client) GetObjectTagging(ctx context.Context, bucketName string, filePath string, versionId string) (*Tagging, error) {
+	query := make(map[string]string)
+	var attributes Tagging
+
+	query["attributes"] = ""
+
+	if versionId != "" {
+		query["versionId"] = versionId
+	}
+
+	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, filePath, query, []byte{})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.NewDecoder(resp.Body).Decode(&attributes)
+	if err != nil {
+		fmt.Println("Error parsing XML:", err)
+		return nil, err
+	}
+
+	return &attributes, nil
+}
+
 // Put/Update object tagging
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectTagging.html
 func (c *Client) PutObjectTagging(ctx context.Context, bucketName string, filePath string, tagging Tagging, versionId string) (string, error) {
