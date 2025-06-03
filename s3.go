@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -17,8 +18,10 @@ import (
 
 // S3 Client
 // Source From Fermyon Spin Go SDK : https://github.com/spinframework/spin-go-sdk
-
 // New creates a new Client.
+
+const chunkSize = 4096
+
 func New(config Config) (*Client, error) {
 	u, err := url.Parse(config.Endpoint)
 	if err != nil {
@@ -43,6 +46,11 @@ func (c *Client) buildEndpoint(bucketName, path string) (string, error) {
 	}
 	return u.JoinPath(path).String(), nil
 
+}
+
+func (c *Client) buildContentHash(data []byte) (string, error) {
+	hash := md5.Sum(data)
+	return base64.StdEncoding.EncodeToString(hash[:]), nil
 }
 
 // Dev State
@@ -448,8 +456,11 @@ func (c *Client) DeleteObjects(ctx context.Context, bucketName string, objects D
 		return nil, err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -842,8 +853,11 @@ func (c *Client) PutBucketWebsite(ctx context.Context, bucketName string, config
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -915,8 +929,11 @@ func (c *Client) PutBucketVersioning(ctx context.Context, bucketName string, ver
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -969,8 +986,11 @@ func (c *Client) PutBucketTagging(ctx context.Context, bucketName string, taggin
 		return "", err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	resp, err := c.do(req)
 	if err != nil {
@@ -1018,8 +1038,11 @@ func (c *Client) PutObjectLockConfiguration(ctx context.Context, bucketName stri
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -1096,8 +1119,11 @@ func (c *Client) PutObjectRetention(ctx context.Context, bucketName string, file
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -1152,8 +1178,11 @@ func (c *Client) PutObjectAcl(ctx context.Context, bucketName string, filePath s
 		return "", err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	resp, err := c.do(req)
 	if err != nil {
@@ -1306,8 +1335,11 @@ func (c *Client) PutPublicAccessBlock(ctx context.Context, bucketName string, co
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -1538,8 +1570,11 @@ func (c *Client) PutObjectLegalHold(ctx context.Context, bucketName string, file
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -1619,8 +1654,11 @@ func (c *Client) PutBucketPolicy(ctx context.Context, bucketName string, policy 
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
@@ -1689,8 +1727,11 @@ func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName
 		return "", err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", string(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	resp, err := c.do(req)
 	if err != nil {
