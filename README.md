@@ -65,26 +65,83 @@ The following operations are supported:
 - CreateBucket
 - ListBuckets
 - ListObjects
+- ListObjectsV2
+- ListObjectVersions
 - HeadObject
 - GetObject
 - GetObjectPart
 - PutObject
 - PutObjectStream
-- ListMultipartUploads
+- DeleteObject
+- DeleteObjects
 - CreateMultipartUpload
 - UploadPart
 - CompleteMultipartUpload
+- ListMultipartUploads
 - AbortMultipartUpload
 - ListParts
+
+- GetObjectTagging
 - PutObjectTagging
 - DeleteObjectTagging
+
 - GetObjectAttributes
 - ListDirectoryBuckets
+
 - GetBucketWebsite
 - PutBucketWebsite
 - DeleteBucketWebsite
 
 
+- GetBucketVersioning
+- PutBucketVersioning
+
+- GetBucketTagging
+- PutBucketTagging
+- DeleteBucketTagging
+
+- PutObjectLockConfiguration
+- GetObjectLockConfiguration
+
+- GetObjectRetention
+- PutObjectRetention
+
+- GetObjectAcl
+- PutObjectAcl
+
+- GetBucketAcl
+- PutBucketAcl
+
+- GetBucketLogging
+- PutBucketLogging
+
+- GetPublicAccessBlock
+- PutPublicAccessBlock
+- DeletePublicAccessBlock
+
+- GetBucketNotificationConfiguration
+- PutBucketNotificationConfiguration
+
+- GetBucketMetricsConfiguration
+- ListBucketMetricsConfigurations
+- PutBucketMetricsConfiguration
+- DeleteBucketMetricsConfiguration
+
+- GetObjectLegalHold
+- PutObjectLegalHold
+
+- GetBucketPolicyStatus
+- GetBucketPolicy
+- PutBucketPolicy
+- DeleteBucketPolicy
+
+- GetBucketLifecycleConfiguration
+- PutBucketLifecycleConfiguration
+- DeleteBucketLifecycle
+
+- GetBucketMetadataTableConfiguratio
+- CreateBucketMetadataTableConfiguration
+- DeleteBucketMetadataTableConfiguration
 
 
 ## Examples
