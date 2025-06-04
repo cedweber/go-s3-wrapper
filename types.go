@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -25,6 +26,7 @@ type Config struct {
 type Client struct {
 	config      Config
 	endpointURL string
+	httpClient  *http.Client
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html#AmazonS3-CreateMultipartUpload-response-CreateMultipartUploadOutput
@@ -704,4 +706,8 @@ type S3TablesDestinationResult struct {
 	TableBucketArn string `xml:"TableBucketArn"`
 	TableName      string `xml:"TableName"`
 	TableNamespace string `xml:"TableNamespace"`
+}
+
+type PutObjectMetadata struct {
+	ContentLength int64
 }
