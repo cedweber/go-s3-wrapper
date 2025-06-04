@@ -1,5 +1,4 @@
-module github.com/star_sample
-
+module github.com/cedweber/spin-s3-api/examples/file-retrieving
 
 go 1.23.3
 

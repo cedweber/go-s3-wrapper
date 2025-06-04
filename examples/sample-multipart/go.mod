@@ -1,4 +1,4 @@
-module github.com/cedweber/spin-s3-api-sample-multipart
+module github.com/cedweber/spin-s3-api/examples/sample-multipart
 
 go 1.23.3
 
