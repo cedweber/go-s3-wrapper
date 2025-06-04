@@ -64,6 +64,9 @@ The following operations are supported:
 
 - CreateBucket
 - ListBuckets
+
+##### Object Operations
+
 - ListObjects
 - ListObjectsV2
 - ListObjectVersions
@@ -74,6 +77,9 @@ The following operations are supported:
 - PutObjectStream
 - DeleteObject
 - DeleteObjects
+
+##### Multipart
+
 - CreateMultipartUpload
 - UploadPart
 - CompleteMultipartUpload
@@ -81,76 +87,109 @@ The following operations are supported:
 - AbortMultipartUpload
 - ListParts
 
+##### Object Tagging
+
 - GetObjectTagging
 - PutObjectTagging
 - DeleteObjectTagging
 
+##### Others
+
 - GetObjectAttributes
 - ListDirectoryBuckets
+
+##### Bucket Website
 
 - GetBucketWebsite
 - PutBucketWebsite
 - DeleteBucketWebsite
 
+##### Bucket Versioning
 
 - GetBucketVersioning
 - PutBucketVersioning
+
+##### Bucket Tagging
 
 - GetBucketTagging
 - PutBucketTagging
 - DeleteBucketTagging
 
+##### Object Lock Config
+
 - PutObjectLockConfiguration
 - GetObjectLockConfiguration
+
+##### Object Retention
 
 - GetObjectRetention
 - PutObjectRetention
 
+##### Object Access Control
+
 - GetObjectAcl
 - PutObjectAcl
+
+##### Bucket Access Control
 
 - GetBucketAcl
 - PutBucketAcl
 
+##### Bucket Logging
+
 - GetBucketLogging
 - PutBucketLogging
+
+##### Public Access Block
 
 - GetPublicAccessBlock
 - PutPublicAccessBlock
 - DeletePublicAccessBlock
 
+##### Bucket Notification Configuration
+
 - GetBucketNotificationConfiguration
 - PutBucketNotificationConfiguration
+
+##### Bucket Metrics
 
 - GetBucketMetricsConfiguration
 - ListBucketMetricsConfigurations
 - PutBucketMetricsConfiguration
 - DeleteBucketMetricsConfiguration
 
+##### Object Legal Hold
+
 - GetObjectLegalHold
 - PutObjectLegalHold
+
+##### Bucket Policy
 
 - GetBucketPolicyStatus
 - GetBucketPolicy
 - PutBucketPolicy
 - DeleteBucketPolicy
 
+##### Bucket Lifecycle Configuration
+
 - GetBucketLifecycleConfiguration
 - PutBucketLifecycleConfiguration
 - DeleteBucketLifecycle
 
-- GetBucketMetadataTableConfiguratio
+##### Bucket Metadata Configuration
+
+- GetBucketMetadataTableConfiguration
 - CreateBucketMetadataTableConfiguration
 - DeleteBucketMetadataTableConfiguration
 
 
 ## Examples
 
-We provide various examples in the ``examples`` subfolder. 
+Examples can be found in the ``examples`` subfolder. 
 
 
 
 ## Contribution
 
-If you think something is missing feel free to contribute.
+If you think something is missing or wrong feel free to contribute.
 
