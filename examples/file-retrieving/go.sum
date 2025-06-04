@@ -1,0 +1,6 @@
+github.com/rajatjindal/wasi-http-go v0.0.0-20250430163340-bf83542051da h1:eqUxITNvJ+K4ObWjtwvFPpwqWbBhx4PoSfhXp3i8GWE=
+github.com/rajatjindal/wasi-http-go v0.0.0-20250430163340-bf83542051da/go.mod h1:d8SobHm5UmjaDQZQhxSnzTer69vfXAMnNOn8ios/Jb4=
+github.com/spinframework/spin-go-sdk/v2 v2.0.0-20250422162322-8ffe6d3efa29 h1:LKVDt73QtfLIK1Pz/IvdZLaHz2s2HRlvA7Rzbw1YTRQ=
+github.com/spinframework/spin-go-sdk/v2 v2.0.0-20250422162322-8ffe6d3efa29/go.mod h1:kb88I4MaaiHqNcG0zL3Ov9gciiKgETMU+5UWx+w+5vI=
+go.bytecodealliance.org/cm v0.2.2 h1:M9iHS6qs884mbQbIjtLX1OifgyPG9DuMs2iwz8G4WQA=
+go.bytecodealliance.org/cm v0.2.2/go.mod h1:JD5vtVNZv7sBoQQkvBvAAVKJPhR/bqBH7yYXTItMfZI=
