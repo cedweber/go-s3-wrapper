@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,25 +11,23 @@ import (
 	"strconv"
 
 	s3 "github.com/cedweber/spin-s3-api"
-	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
+	"github.com/ydnar/wasi-http-go/wasihttp"
 )
 
+type WasiHTTP struct{}
+
 func init() {
-	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(418)
+		w.Write([]byte("Do you like tea?\n"))
+		w.Write([]byte("Because I'm a teapot"))
 
-		router := spinhttp.NewRouter()
-		router.HandleMethodNotAllowed = true
-
-		router.POST("/trigger/copy", handleCopy)
-		router.POST("/trigger/part", handleCopyPart)
-		router.POST("/uploads", deleteAllExistingMultipartUploads)
-		router.POST("/multipart", listMultipartParts)
-		router.ServeHTTP(w, r)
 	})
-
 }
 
-func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
+func main() {}
+
+func handleCopyPart(w http.ResponseWriter, r *http.Request) {
 
 	var config CopyConfig
 
@@ -57,14 +56,18 @@ func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 	}
 
 	// Create a New S3 client.
-	s3ClientS, err := s3.New(cfgSource)
+	s3ClientS, err := s3.New(cfgSource, &http.Client{
+		Transport: &wasihttp.Transport{},
+	})
 	if err != nil {
 		fmt.Printf("failed to create source client %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s3ClientT, err := s3.New(cfgTarget)
+	s3ClientT, err := s3.New(cfgTarget, &http.Client{
+		Transport: &wasihttp.Transport{},
+	})
 	if err != nil {
 		fmt.Printf("failed to create target client %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,19 +81,20 @@ func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 	// Get File Size by creating a HEAD request
 	resp, err := s3ClientS.HeadObject(ctx, config.SourceBucketName, config.FilePath)
 	if err != nil {
-		fmt.Printf("failed to get file info %\n", err)
+		fmt.Printf("failed to get file info %v\n", err)
 	}
-	i, err := strconv.Atoi(resp.Header.Get("Content-Length"))
+	contentLength, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
 	if err != nil {
-		fmt.Printf("failed to retrieve file size info %v\n", err)
-	}
-
-	if i == 0 {
-		fmt.Printf("File not found or file does not exist")
+		fmt.Printf("failed to retrieve file size info: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Starting file Streaming of file %s with size %d in bucket %s  ...\n", config.FilePath, i, config.SourceBucketName)
+	if contentLength == 0 {
+		fmt.Println("File not found or file does not exist")
+		return
+	}
+
+	fmt.Printf("Starting file Streaming of file %s with size %d in bucket %s  ...\n", config.FilePath, contentLength, config.SourceBucketName)
 
 	file, err := s3ClientS.GetObject(ctx, config.SourceBucketName, config.FilePath)
 	if err != nil && err != io.EOF {
@@ -102,7 +106,9 @@ func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 
 	defer file.Close()
 
-	resp, err = s3ClientT.PutObjectStream(ctx, config.TargetBucketName, config.FilePath, file)
+	resp, err = s3ClientT.PutObjectStream(ctx, config.TargetBucketName, config.FilePath, file, &s3.PutObjectMetadata{
+		ContentLength: contentLength,
+	})
 	if err != nil && err != io.EOF {
 		fmt.Printf("Error reading file: %v\n", err)
 		http.Error(w, "Error reading file", http.StatusInternalServerError)
@@ -112,12 +118,11 @@ func handleCopyPart(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 	fmt.Printf("File Upload finished")
 	w.WriteHeader(200)
 	w.Header().Set("Connection", "Close")
-	return
 }
 
 // Handle File Copy
 // If file size > file part => multipart upload otherwise load file into memory and upload
-func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
+func handleCopy(w http.ResponseWriter, r *http.Request) {
 
 	var config CopyConfig
 
@@ -146,14 +151,18 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 	}
 
 	// Create a New S3 client.
-	s3ClientS, err := s3.New(cfgSource)
+	s3ClientS, err := s3.New(cfgSource, &http.Client{
+		Transport: &wasihttp.Transport{},
+	})
 	if err != nil {
 		fmt.Printf("failed to create source client %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s3ClientT, err := s3.New(cfgTarget)
+	s3ClientT, err := s3.New(cfgTarget, &http.Client{
+		Transport: &wasihttp.Transport{},
+	})
 	if err != nil {
 		fmt.Printf("failed to create target client %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -166,7 +175,7 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 
 	resp, err := s3ClientS.HeadObject(ctx, config.SourceBucketName, config.FilePath)
 	if err != nil {
-		fmt.Printf("failed to get file info %\n", err)
+		fmt.Printf("failed to get file info %v\n", err)
 	}
 	i, err := strconv.Atoi(resp.Header.Get("Content-Length"))
 	if err != nil {
@@ -193,6 +202,10 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 		var part io.ReadCloser
 
 		uploadData, err := s3ClientT.CreateMultipartUpload(ctx, config.TargetBucketName, config.FilePath)
+		if err != nil {
+			fmt.Printf("failed to create multi part file part %v\n", err)
+
+		}
 
 		fmt.Printf("Retrieving file %s with size %v in bucket %s\n", config.FilePath, i, config.TargetBucketName)
 
@@ -281,6 +294,10 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 		}
 
 		err = s3ClientT.PutObject(ctx, config.TargetBucketName, config.FilePath, buf)
+		if err != nil {
+			fmt.Printf("error putting object %v\n", err)
+
+		}
 
 	}
 
@@ -288,7 +305,7 @@ func handleCopy(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
 	w.Header().Set("Connection", "Close")
 }
 
-func deleteAllExistingMultipartUploads(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
+func deleteAllExistingMultipartUploads(w http.ResponseWriter, r *http.Request) {
 	var config FileBucketConfig
 
 	dec := json.NewDecoder(r.Body)
@@ -311,7 +328,9 @@ func deleteAllExistingMultipartUploads(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Create a New S3 client.
-	s3ClientS, err := s3.New(cfgSource)
+	s3ClientS, err := s3.New(cfgSource, &http.Client{
+		Transport: &wasihttp.Transport{},
+	})
 	if err != nil {
 		fmt.Printf("failed to create source client %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -340,7 +359,7 @@ func deleteAllExistingMultipartUploads(w http.ResponseWriter, r *http.Request, p
 
 }
 
-func listMultipartParts(w http.ResponseWriter, r *http.Request, p spinhttp.Params) {
+func listMultipartParts(w http.ResponseWriter, r *http.Request) {
 	var config FileBucketConfig
 
 	dec := json.NewDecoder(r.Body)
@@ -361,7 +380,9 @@ func listMultipartParts(w http.ResponseWriter, r *http.Request, p spinhttp.Param
 	}
 
 	// Create a New S3 client.
-	s3ClientS, err := s3.New(cfgSource)
+	s3ClientS, err := s3.New(cfgSource, &http.Client{
+		Transport: &wasihttp.Transport{},
+	})
 	if err != nil {
 		fmt.Printf("failed to create source client %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -386,6 +407,6 @@ func listMultipartParts(w http.ResponseWriter, r *http.Request, p spinhttp.Param
 	}
 
 	for _, part := range parts.Parts {
-		fmt.Print("Part-Nr: %v \n Size: %d and tag %v", part.PartNumber, part.Size, part.ETag)
+		fmt.Printf("Part-Nr: %v \n Size: %d and tag %v", part.PartNumber, part.Size, part.ETag)
 	}
 }

@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
 )
 
 // S3 Client
@@ -22,7 +20,8 @@ import (
 
 const chunkSize = 4096
 
-func New(config Config) (*Client, error) {
+// New creates a new Client.
+func New(config Config, httpClient *http.Client) (*Client, error) {
 	u, err := url.Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
@@ -30,8 +29,8 @@ func New(config Config) (*Client, error) {
 	client := &Client{
 		config:      config,
 		endpointURL: u.String(),
+		httpClient:  httpClient,
 	}
-
 	return client, nil
 }
 
@@ -211,7 +210,7 @@ func (c *Client) newRequestStreamParts(ctx context.Context, method string, bucke
 
 // do sends the request and handles any error response.
 func (c *Client) do(req *http.Request) (*http.Response, error) {
-	resp, err := spinhttp.Send(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
@@ -417,17 +416,23 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, d
 
 // PutObject uploads an object to the specified bucket.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
-func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader) (*http.Response, error) {
-	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, data)
+// PutObject uploads an object to the specified bucket.
+func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader, metadata *PutObjectMetadata) (*http.Response, error) {
+	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, newChunkReader(data))
 	if err != nil {
 		return nil, err
+	}
+
+	if metadata != nil {
+		if metadata.ContentLength > 0 {
+			req.Header.Set("Content-Length", fmt.Sprintf("%d", metadata.ContentLength))
+		}
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return resp, nil
 }
@@ -665,7 +670,7 @@ func (c *Client) GetObjectTagging(ctx context.Context, bucketName string, filePa
 	query := make(map[string]string)
 	var attributes Tagging
 
-	query["attributes"] = ""
+	query["tagging"] = ""
 
 	if versionId != "" {
 		query["versionId"] = versionId
@@ -1698,7 +1703,7 @@ func (c *Client) DeleteBucketPolicy(ctx context.Context, bucketName string) erro
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycleConfiguration.html
 func (c *Client) GetBucketLifecycleConfiguration(ctx context.Context, bucketName string) (*LifecycleConfiguration, error) {
 	var config LifecycleConfiguration
-	var query map[string]string
+	query := make(map[string]string)
 	query["lifecycle"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodGet, bucketName, "", query, nil)
@@ -1722,7 +1727,7 @@ func (c *Client) GetBucketLifecycleConfiguration(ctx context.Context, bucketName
 // Put a new lifecycle configuration
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html
 func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName string, lifecycle LifecycleConfiguration) (string, error) {
-	var query map[string]string
+	query := make(map[string]string)
 	query["lifecycle"] = ""
 
 	data, err := xml.Marshal(lifecycle)
@@ -1752,7 +1757,7 @@ func (c *Client) PutBucketLifecycleConfiguration(ctx context.Context, bucketName
 // Delete bucket lifecycle
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_DeleteBucketLifecycleConfiguration.html
 func (c *Client) DeleteBucketLifecycle(ctx context.Context, bucketName string) error {
-	var query map[string]string
+	query := make(map[string]string)
 	query["lifecycle"] = ""
 
 	req, err := c.newRequestWithQuery(ctx, http.MethodDelete, bucketName, fmt.Sprintf("/v20180820/bucket/%s/lifecycleconfiguration", bucketName), query, nil)
@@ -1772,7 +1777,7 @@ func (c *Client) DeleteBucketLifecycle(ctx context.Context, bucketName string) e
 
 // Get bucket metadata table config
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketMetadataTableConfiguration.html
-func (c *Client) GetBucketMetadataTableConfiguratio(ctx context.Context, bucketName string) (*GetBucketMetadataTableConfigurationResult, error) {
+func (c *Client) GetBucketMetadataTableConfiguration(ctx context.Context, bucketName string) (*GetBucketMetadataTableConfigurationResult, error) {
 
 	var metadata GetBucketMetadataTableConfigurationResult
 	query := make(map[string]string)
@@ -1813,15 +1818,18 @@ func (c *Client) CreateBucketMetadataTableConfiguration(ctx context.Context, buc
 		return err
 	}
 
-	hash := md5.New().Sum(data)
-	req.Header.Set("Content-MD5", base64.StdEncoding.EncodeToString(hash))
+	hash, err := c.buildContentHash(data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-MD5", hash)
 
 	_, err = c.do(req)
 	if err != nil {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 // Delete bucket metadata configuration
@@ -1841,5 +1849,21 @@ func (c *Client) DeleteBucketMetadataTableConfiguration(ctx context.Context, buc
 		return err
 	}
 
-	return err
+	return nil
+}
+
+// chunkReader wraps an io.Reader and provides a reader that returns data in chunks.
+type chunkReader struct {
+	src io.Reader
+}
+
+func newChunkReader(src io.Reader) *chunkReader {
+	return &chunkReader{src: src}
+}
+
+func (cr *chunkReader) Read(p []byte) (n int, err error) {
+	if len(p) > chunkSize {
+		p = p[:chunkSize] // limit read to 4KB
+	}
+	return cr.src.Read(p)
 }
