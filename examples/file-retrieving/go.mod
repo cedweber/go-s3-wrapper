@@ -1,4 +1,4 @@
-module github.com/cedweber/spin-s3-api/examples/file-retrieving
+module example
 
 go 1.23.3
 
@@ -9,9 +9,12 @@ require (
 	github.com/ydnar/wasi-http-go v0.0.0-20250324053847-ca78b3198aeb
 )
 
-require go.bytecodealliance.org/cm v0.2.2 // indirect
-require github.com/cedweber/spin-s3-api v0.0.0
+require (
+	github.com/cedweber/spin-s3-api v0.0.0-00010101000000-000000000000
+	go.bytecodealliance.org/cm v0.2.2 // indirect
+)
 
 // replace github.com/ydnar/wasi-http-go => ../../ydnar/wasi-http-go
 replace github.com/ydnar/wasi-http-go => github.com/rajatjindal/wasi-http-go v0.0.0-20250430163340-bf83542051da
+
 replace github.com/cedweber/spin-s3-api => ../../

@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -20,8 +21,16 @@ import (
 
 const chunkSize = 4096
 
+func (c *Client) buildContentHash(data []byte) (string, error) {
+	hash := md5.Sum(data)
+	return base64.StdEncoding.EncodeToString(hash[:]), nil
+}
+
+// S3 Client
+// Source From Fermyon Spin Go SDK : https://github.com/spinframework/spin-go-sdk
+
 // New creates a new Client.
-func New(config Config, httpClient *http.Client) (*Client, error) {
+func New(config Config, httpclient *http.Client) (*Client, error) {
 	u, err := url.Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
@@ -29,13 +38,13 @@ func New(config Config, httpClient *http.Client) (*Client, error) {
 	client := &Client{
 		config:      config,
 		endpointURL: u.String(),
-		httpClient:  httpClient,
+		httpClient:  httpclient,
 	}
 	return client, nil
 }
 
 // buildEndpoint returns an endpoint
-func (c *Client) buildEndpoint(bucketName, path string) (string, error) {
+func (c *Client) buildEndpoint(bucketName, path string, query map[string]string) (string, error) {
 	u, err := url.Parse(c.endpointURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse endpoint: %w", err)
@@ -43,75 +52,17 @@ func (c *Client) buildEndpoint(bucketName, path string) (string, error) {
 	if bucketName != "" {
 		u.Host = bucketName + "." + u.Host
 	}
-	return u.JoinPath(path).String(), nil
-
-}
-
-func (c *Client) buildContentHash(data []byte) (string, error) {
-	hash := md5.Sum(data)
-	return base64.StdEncoding.EncodeToString(hash[:]), nil
-}
-
-// Dev State
-func (c *Client) buildEndpointWithQuery(bucketName, path string, query map[string]string) (string, error) {
-	u, err := url.Parse(c.endpointURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse endpoint: %w", err)
+	q := u.Query()
+	for k, v := range query {
+		q.Set(k, v)
 	}
-	if bucketName != "" {
-		u.Host = bucketName + "." + u.Host
-	}
-
-	if query != nil {
-		endpoint := u.JoinPath(path)
-
-		if len(query) > 0 {
-
-			queryPart := []string{}
-			for k, v := range query {
-
-				if k == "" {
-					continue
-				}
-				queryPart = append(queryPart, fmt.Sprintf("%v=%v", k, v))
-			}
-			queryData := ""
-			for i, v := range queryPart {
-				if i == 0 {
-					queryData = fmt.Sprintf("%v", v)
-				} else {
-					queryData = fmt.Sprintf("%v&%v", queryData, v)
-				}
-
-			}
-
-			if path == "" {
-				path = "/"
-			}
-
-			endpoint := fmt.Sprintf("%s?%s", u.JoinPath(path).String(), queryData)
-
-			fmt.Printf("\n endpoint: %s \n", endpoint)
-
-			return endpoint, nil
-
-		}
-
-		return endpoint.String(), nil
-	}
-
-	if path == "" {
-		path = "/"
-	}
-
-	fmt.Printf("\n endpoint: %s \n", u.JoinPath(path).String())
-
+	u.RawQuery = q.Encode()
 	return u.JoinPath(path).String(), nil
 }
 
-func (c *Client) newRequestWithQuery(ctx context.Context, method string, bucketName string, path string, query map[string]string, body []byte) (*http.Request, error) {
+func (c *Client) newRequestWithQuery(ctx context.Context, method, bucketName, path string, query map[string]string, body []byte) (*http.Request, error) {
 	now := time.Now().UTC()
-	endpointURL, err := c.buildEndpointWithQuery(bucketName, path, query)
+	endpointURL, err := c.buildEndpoint(bucketName, path, query)
 	if err != nil {
 		return nil, err
 	}
@@ -128,14 +79,13 @@ func (c *Client) newRequestWithQuery(ctx context.Context, method string, bucketN
 	req.Header.Set("x-amz-content-sha256", payloadHash)
 	req.Header.Set("x-amz-date", now.Format(timeFormat))
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Content-Length", fmt.Sprint(len(body)))
+	req.Header.Set("Content-Length", strconv.Itoa(len(body)))
 
 	return req, nil
 }
 
 func (c *Client) newRequest(ctx context.Context, method, bucketName, path string, body []byte) (*http.Request, error) {
-
-	endpointURL, err := c.buildEndpoint(bucketName, path)
+	endpointURL, err := c.buildEndpoint(bucketName, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +105,12 @@ func (c *Client) newRequest(ctx context.Context, method, bucketName, path string
 	req.Header.Set("x-amz-date", now.Format(timeFormat))
 	req.Header.Set("User-Agent", userAgent)
 
-	req.Header.Set("Content-Length", fmt.Sprint(len(body)))
+	req.Header.Set("Content-Length", strconv.Itoa(len(body)))
 	return req, nil
 }
 
-func (c *Client) newRequestStream(ctx context.Context, method string, bucketName string, path string, body io.Reader) (*http.Request, error) {
-	endpointURL, err := c.buildEndpoint(bucketName, path)
+func (c *Client) newRequestStream(ctx context.Context, method, bucketName, path string, body io.Reader) (*http.Request, error) {
+	endpointURL, err := c.buildEndpoint(bucketName, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -183,8 +133,8 @@ func (c *Client) newRequestStream(ctx context.Context, method string, bucketName
 	return req, nil
 }
 
-func (c *Client) newRequestStreamParts(ctx context.Context, method string, bucketName string, path string, partNumber int, uploadId string, body io.Reader) (*http.Request, error) {
-	endpointURL, err := c.buildEndpoint(bucketName, path)
+func (c *Client) newRequestStreamParts(ctx context.Context, method, bucketName, path string, partNumber int, uploadId string, body io.Reader) (*http.Request, error) {
+	endpointURL, err := c.buildEndpoint(bucketName, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -210,15 +160,16 @@ func (c *Client) newRequestStreamParts(ctx context.Context, method string, bucke
 
 // do sends the request and handles any error response.
 func (c *Client) do(req *http.Request) (*http.Response, error) {
+	fmt.Println(req.URL.String())
+	fmt.Println(req.Header)
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-
-	if resp.StatusCode >= 300 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusPartialContent {
 		var errorResponse ErrorResponse
 		if err := xml.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 
@@ -357,7 +308,7 @@ func (c *Client) HeadObject(ctx context.Context, bucketName string, objectName s
 	if err != nil {
 		return nil, err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
 	return resp, nil
 }
@@ -374,7 +325,6 @@ func (c *Client) GetObject(ctx context.Context, bucketName, objectName string) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return resp.Body, nil
 }

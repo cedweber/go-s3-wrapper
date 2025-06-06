@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,27 +12,27 @@ import (
 
 	s3 "github.com/cedweber/spin-s3-api"
 	"github.com/spinframework/spin-go-sdk/v2/variables"
+	"github.com/spinframework/spin-go-sdk/v2/wit"
 	"github.com/ydnar/wasi-http-go/wasihttp" // enable wasi-http
 )
 
+// This is purely for wit interfaces
+var _ = wit.Wit
+
+func main() {}
+
 func init() {
-	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello Companies!\n"))
-	})
-	http.HandleFunc("/get", getFile)
-	http.HandleFunc("/tea", tea)
+	wasihttp.Serve(&WasiHTTP{})
 }
 
-func tea(w http.ResponseWriter, r *http.Request) {
+type WasiHTTP struct{}
 
-	w.WriteHeader(418)
-	w.Write([]byte("Do you like tea?"))
-	w.Write([]byte("Because I am a teapot"))
-
+func (ww *WasiHTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	getFile(w, r)
 }
 
 type FileConfig struct {
-	filePath string
+	FilePath string
 }
 
 func getFile(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +48,7 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := variables.Get("url")
+	url, err := variables.Get("base_url")
 	if err != nil {
 		http.Error(w, "Failed to read access_token var", 500)
 
@@ -58,7 +59,7 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read access_token var", 500)
 	}
 
-	secretToken, err := variables.Get("access_token")
+	secretToken, err := variables.Get("secret_token")
 	if err != nil {
 		http.Error(w, "Failed to read secrets_token var", 500)
 	}
@@ -80,9 +81,11 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 		Region:    region,
 	}
 
-	s3Client, err := s3.New(cfg, &http.Client{
+	httpclient := &http.Client{
 		Transport: &wasihttp.Transport{},
-	})
+	}
+
+	s3Client, err := s3.New(cfg, httpclient)
 	if err != nil {
 		fmt.Printf("failed to create target client %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -94,7 +97,7 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Retrieving file information...\n")
 
 	// Get File Size by creating a HEAD request
-	resp, err := s3Client.HeadObject(ctx, bucketName, config.filePath)
+	resp, err := s3Client.HeadObject(ctx, bucketName, config.FilePath)
 	if err != nil {
 		fmt.Printf("failed to get file info %v\n", err)
 	}
@@ -109,23 +112,23 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Starting file Streaming of file %s with size %d in bucket %s  ...\n", config.filePath, contentLength, bucketName)
+	fmt.Printf("Starting file Streaming of file %s with size %d in bucket %s  ...\n", config.FilePath, contentLength, bucketName)
 
-	file, err := s3Client.GetObject(ctx, bucketName, config.filePath)
+	file, err := s3Client.GetObject(ctx, bucketName, config.FilePath)
 	if err != nil && err != io.EOF {
 		log.Fatal("Error retrieving file", err)
 		http.Error(w, "Error retrieving file", http.StatusInternalServerError)
 	}
+	defer file.Close()
 
 	// Blocking read all
 	data, err := io.ReadAll(file)
-
 	if err != nil && err != io.EOF {
 		log.Fatal("Error reading file", err)
 		http.Error(w, "Error reading file", http.StatusInternalServerError)
 	}
 
+	file.Close()
+
 	w.Write(data)
 }
-
-func main() {}
