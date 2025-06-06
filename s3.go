@@ -26,9 +26,6 @@ func (c *Client) buildContentHash(data []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(hash[:]), nil
 }
 
-// S3 Client
-// Source From Fermyon Spin Go SDK : https://github.com/spinframework/spin-go-sdk
-
 // New creates a new Client.
 func New(config Config, httpclient *http.Client) (*Client, error) {
 	u, err := url.Parse(config.Endpoint)
@@ -72,8 +69,6 @@ func (c *Client) newRequestWithQuery(ctx context.Context, method, bucketName, pa
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set the AWS authentication headers
-	// Some are required for STACKIT Object Storage
 	payloadHash := getPayloadHash(&body)
 	req.Header.Set("Authorization", getAuthorizationHeader(req, payloadHash, c.config.Region, c.config.AccessKey, c.config.SecretKey, now))
 	req.Header.Set("x-amz-content-sha256", payloadHash)
@@ -97,8 +92,6 @@ func (c *Client) newRequest(ctx context.Context, method, bucketName, path string
 
 	now := time.Now().UTC()
 
-	// Set the AWS authentication headers
-	// Some are required for STACKIT Object Storage
 	payloadHash := getPayloadHash(&body)
 	req.Header.Set("Authorization", getAuthorizationHeader(req, payloadHash, c.config.Region, c.config.AccessKey, c.config.SecretKey, now))
 	req.Header.Set("x-amz-content-sha256", payloadHash)
