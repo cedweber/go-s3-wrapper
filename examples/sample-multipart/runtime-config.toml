@@ -1,5 +1,0 @@
-[[config_provider]]
-type = "vault"
-url = "https://prod.sm.eu01.stackit.cloud"
-token = ""
-mount = ""
