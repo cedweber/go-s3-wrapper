@@ -79,9 +79,9 @@ func (c *Client) newRequest(ctx context.Context, method, bucketName, path string
 	return req, nil
 }
 
-func (c *Client) newRequestStream(ctx context.Context, method, bucketName, path string, body io.Reader) (*http.Request, error) {
+func (c *Client) newRequestStream(ctx context.Context, method, bucketName, path string, query map[string]string, body io.Reader) (*http.Request, error) {
 	now := time.Now().UTC()
-	endpointURL, err := c.buildEndpoint(bucketName, path, nil)
+	endpointURL, err := c.buildEndpoint(bucketName, path, query)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,6 @@ func (c *Client) HeadObject(ctx context.Context, bucketName string, objectName s
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return resp, nil
 }
@@ -273,7 +272,7 @@ func (c *Client) GetObject(ctx context.Context, bucketName, objectName string) (
 
 // GetObject fetches an object.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
-func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName string, start int, end int) (io.ReadCloser, error) {
+func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName string, start int64, end int64) (io.ReadCloser, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, bucketName, objectName, nil, nil)
 	if err != nil {
 		return nil, err
@@ -284,7 +283,6 @@ func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName strin
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return resp.Body, nil
 }
@@ -310,7 +308,7 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, d
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 // PutObject uploads an object to the specified bucket.
 func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader, metadata *PutObjectMetadata) (*http.Response, error) {
-	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, newChunkReader(data))
+	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, nil, newChunkReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -417,15 +415,15 @@ func (c *Client) CreateMultipartUpload(ctx context.Context, bucketName string, f
 
 // Upload a part
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html
-func (c *Client) UploadPart(ctx context.Context, bucketName string, objectName string, data io.Reader, size int, partNumber int, uploadId string) (string, error) {
+func (c *Client) UploadPart(ctx context.Context, bucketName string, objectName string, data io.Reader, size int64, partNumber int64, uploadId string) (string, error) {
 
 	query := make(map[string]string)
-	query["partNumber"] = string(uploadId)
+	query["partNumber"] = strconv.FormatInt(int64(partNumber), 10)
 	query["uploadId"] = uploadId
 
-	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, data)
+	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, query, newChunkReader(data))
 	if err != nil && err != io.EOF {
-		return "", err
+		return "Error streaming chunks", err
 	}
 
 	req.Header.Set("Content-Length", fmt.Sprintf("%d", size))
@@ -447,7 +445,7 @@ func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string,
 	query := make(map[string]string)
 	query["uploadId"] = string(uploadId)
 
-	completeUpload := CompletedMultipartUpload{
+	completeUpload := CompleteMultipartUpload{
 		Parts: parts,
 	}
 	xmlData, err := xml.Marshal(completeUpload)
@@ -455,7 +453,7 @@ func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string,
 		fmt.Printf("Error parsing response: %v", xmlData)
 	}
 
-	endReq, err := c.newRequest(ctx, http.MethodPost, bucketName, objectName, query, xmlData)
+	endReq, err := c.newRequestStream(ctx, http.MethodPost, bucketName, objectName, query, newChunkReader(bytes.NewReader(xmlData)))
 	if err != nil {
 		return err
 	}

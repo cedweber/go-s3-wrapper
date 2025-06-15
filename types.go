@@ -42,17 +42,17 @@ type InitiateMultipartUploadResult struct {
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompletedPart.html
 type CompletedPart struct {
 	XMLName           xml.Name `xml:"Part"`
-	ChecksumCRC32     string   `xml:"ChecksumCRC32"`
-	ChecksumCRC32C    string   `xml:"ChecksumCRC32C"`
-	ChecksumCRC64NVME string   `xml:"ChecksumCRC64NVME"`
-	ChecksumSHA1      string   `xml:"ChecksumSHA1"`
-	ChecksumSHA256    string   `xml:"ChecksumSHA256"`
-	ETag              string   `xml:"ETag"`
 	PartNumber        int      `xml:"PartNumber"`
+	ETag              string   `xml:"ETag"`
+	ChecksumCRC32     string   `xml:"ChecksumCRC32,omitempty"`
+	ChecksumCRC32C    string   `xml:"ChecksumCRC32C,omitempty"`
+	ChecksumCRC64NVME string   `xml:"ChecksumCRC64NVME,omitempty"`
+	ChecksumSHA1      string   `xml:"ChecksumSHA1,omitempty"`
+	ChecksumSHA256    string   `xml:"ChecksumSHA256,omitempty"`
 }
 
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompletedMultipartUpload.html
-type CompletedMultipartUpload struct {
+type CompleteMultipartUpload struct {
 	XmlName xml.Name        `xml:"CompleteMultipartUpload"`
 	Parts   []CompletedPart `xml:"Part"`
 }
