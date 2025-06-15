@@ -274,7 +274,7 @@ func (c *Client) GetObject(ctx context.Context, bucketName, objectName string) (
 
 // GetObject fetches an object.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
-func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName string, start int64, end int64) (io.ReadCloser, error) {
+func (c *Client) GetObjectPart(ctx context.Context, bucketName, objectName string, start uint64, end uint64) (io.ReadCloser, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, bucketName, objectName, nil, nil)
 	if err != nil {
 		return nil, err
@@ -417,10 +417,10 @@ func (c *Client) CreateMultipartUpload(ctx context.Context, bucketName string, f
 
 // Upload a part
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html
-func (c *Client) UploadPart(ctx context.Context, bucketName string, objectName string, data io.Reader, size int64, partNumber int64, uploadId string) (string, error) {
+func (c *Client) UploadPart(ctx context.Context, bucketName string, objectName string, data io.Reader, size uint64, partNumber uint64, uploadId string) (string, error) {
 
 	query := make(map[string]string)
-	query["partNumber"] = strconv.FormatInt(int64(partNumber), 10)
+	query["partNumber"] = strconv.FormatUint(uint64(partNumber), 10)
 	query["uploadId"] = uploadId
 
 	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, query, data)
