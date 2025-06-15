@@ -58,6 +58,7 @@ func (c *Client) buildEndpoint(bucketName, path string, query map[string]string)
 	return u.JoinPath(path).String(), nil
 }
 
+// Signed Payload
 func (c *Client) newRequest(ctx context.Context, method, bucketName, path string, query map[string]string, body []byte) (*http.Request, error) {
 	now := time.Now().UTC()
 	endpointURL, err := c.buildEndpoint(bucketName, path, query)
@@ -79,6 +80,7 @@ func (c *Client) newRequest(ctx context.Context, method, bucketName, path string
 	return req, nil
 }
 
+// Unsigned Payload
 func (c *Client) newRequestStream(ctx context.Context, method, bucketName, path string, query map[string]string, body io.Reader) (*http.Request, error) {
 	now := time.Now().UTC()
 	endpointURL, err := c.buildEndpoint(bucketName, path, query)
@@ -86,7 +88,7 @@ func (c *Client) newRequestStream(ctx context.Context, method, bucketName, path 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, endpointURL, body)
+	req, err := http.NewRequestWithContext(ctx, method, endpointURL, newChunkReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -308,7 +310,7 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, d
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 // PutObject uploads an object to the specified bucket.
 func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName string, data io.Reader, metadata *PutObjectMetadata) (*http.Response, error) {
-	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, nil, newChunkReader(data))
+	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, nil, data)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +423,7 @@ func (c *Client) UploadPart(ctx context.Context, bucketName string, objectName s
 	query["partNumber"] = strconv.FormatInt(int64(partNumber), 10)
 	query["uploadId"] = uploadId
 
-	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, query, newChunkReader(data))
+	req, err := c.newRequestStream(ctx, http.MethodPut, bucketName, objectName, query, data)
 	if err != nil && err != io.EOF {
 		return "Error streaming chunks", err
 	}
@@ -453,7 +455,7 @@ func (c *Client) CompleteMultipartUpload(ctx context.Context, bucketName string,
 		fmt.Printf("Error parsing response: %v", xmlData)
 	}
 
-	endReq, err := c.newRequestStream(ctx, http.MethodPost, bucketName, objectName, query, newChunkReader(bytes.NewReader(xmlData)))
+	endReq, err := c.newRequestStream(ctx, http.MethodPost, bucketName, objectName, query, bytes.NewReader(xmlData))
 	if err != nil {
 		return err
 	}
