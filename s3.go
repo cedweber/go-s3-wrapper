@@ -104,14 +104,11 @@ func (c *Client) newRequestStream(ctx context.Context, method, bucketName, path 
 
 // do sends the request and handles any error response.
 func (c *Client) do(req *http.Request) (*http.Response, error) {
-	fmt.Println(req.URL.String())
-	fmt.Println(req.Header)
-
 	resp, err := c.httpClient.Do(req)
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusPartialContent {
+	if resp.StatusCode >= 300 {
 		var errorResponse ErrorResponse
 		if err := xml.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
@@ -332,7 +329,7 @@ func (c *Client) PutObjectStream(ctx context.Context, bucketName, objectName str
 //	Delete a single specified object.
 //
 // https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html
-func (c *Client) DeleteObject(ctx context.Context, bucketName, objectName string, versionId string) error {
+func (c *Client) DeleteObject(ctx context.Context, bucketName, objectName string, versionId string) (*http.Response, error) {
 
 	query := make(map[string]string)
 	if versionId != "" {
@@ -341,15 +338,15 @@ func (c *Client) DeleteObject(ctx context.Context, bucketName, objectName string
 
 	req, err := c.newRequest(ctx, http.MethodDelete, bucketName, objectName, query, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = c.do(req)
+	resp, err := c.do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return resp, nil
 }
 
 // Delete multiple objects in a single request
