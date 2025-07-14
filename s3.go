@@ -109,12 +109,21 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	if resp.StatusCode >= 300 {
-		var errorResponse ErrorResponse
-		if err := xml.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
+		if resp.Body == nil {
+			return nil, fmt.Errorf("response body is empty. HTTP Response code: %d", resp.StatusCode)
 		}
 
-		return nil, errorResponse
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w. HTTP Response code: %d", err, resp.StatusCode)
+		}
+
+		var errorResponse ErrorResponse
+		if err := xml.Unmarshal(body, &errorResponse); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w. HTTP Response code: %d. Raw body: %s", err, resp.StatusCode, string(body))
+		}
+
+		return nil, fmt.Errorf("error response: %v. HTTP Response code: %d", errorResponse, resp.StatusCode)
 	}
 
 	return resp, nil
