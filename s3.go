@@ -55,7 +55,11 @@ func (c *Client) buildEndpoint(bucketName, path string, query map[string]string)
 	if path == "" {
 		return u.JoinPath("/").String(), nil
 	}
-	return u.JoinPath(path).String(), nil
+
+	url := u.JoinPath(path)
+	url.Path = url.EscapedPath()
+
+	return url.String(), nil
 }
 
 // Signed Payload
