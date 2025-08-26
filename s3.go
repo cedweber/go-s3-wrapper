@@ -113,12 +113,20 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	if resp.StatusCode >= 300 {
-		var errorResponse ErrorResponse
-		if err := xml.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
+		contentLength := resp.Header.Get("Content-Length")
+		length, err := strconv.Atoi(contentLength)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract content-length: %w", err)
+		}
+		if length > 0 {
+			var errorResponse ErrorResponse
+			if err := xml.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+				return nil, fmt.Errorf("failed to parse response: %w", err)
+			}
+			return nil, errorResponse
 		}
 
-		return nil, errorResponse
+		return nil, fmt.Errorf("received an unknown response error and no details: %w", err)
 	}
 
 	return resp, nil
